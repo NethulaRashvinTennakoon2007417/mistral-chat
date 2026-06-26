@@ -4,6 +4,7 @@ const CHATS_KEY = 'mistral-chats';
 const SETTINGS_KEY = 'mistral-settings';
 
 const VALID_MODELS: Set<string> = new Set([
+  'auto',
   'mistral-small-latest',
   'mistral-medium-latest',
   'mistral-large-latest',
@@ -79,7 +80,7 @@ export function deleteChat(id: string): void {
 export function getSettings(): Settings {
   const defaults: Settings = {
     apiKey: '',
-    defaultModel: 'mistral-small-latest',
+    defaultModel: 'auto',
     temperature: 0.7,
     maxTokens: 4096,
     systemPrompt: '',

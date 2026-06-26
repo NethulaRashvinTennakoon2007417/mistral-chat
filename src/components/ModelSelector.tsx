@@ -2,14 +2,16 @@
 
 import { useState } from 'react';
 import { MistralModel, MISTRAL_MODELS } from '@/types';
-import { ChevronDown, Check, Zap, Brain, Code, Eye } from 'lucide-react';
+import { ChevronDown, Check, Zap, Brain, Code, Eye, Sparkles } from 'lucide-react';
 
 interface ModelSelectorProps {
   selectedModel: MistralModel;
   onSelect: (model: MistralModel) => void;
+  resolvedModel?: string | null;
 }
 
 const MODEL_ICONS: Record<string, React.ReactNode> = {
+  'auto': <Sparkles size={14} className="text-amber-500" />,
   'mistral-small-latest': <Zap size={14} className="text-blue-500" />,
   'mistral-medium-latest': <Brain size={14} className="text-purple-500" />,
   'mistral-large-latest': <Brain size={14} className="text-orange-500" />,
@@ -20,8 +22,12 @@ const MODEL_ICONS: Record<string, React.ReactNode> = {
   'pixtral-large-latest': <Eye size={14} className="text-purple-500" />,
 };
 
-export function ModelSelector({ selectedModel, onSelect }: ModelSelectorProps) {
+export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
+
+  const displayName = selectedModel === 'auto' && resolvedModel
+    ? `Auto → ${MISTRAL_MODELS[resolvedModel as MistralModel]?.name || resolvedModel}`
+    : MISTRAL_MODELS[selectedModel].name;
 
   return (
     <div className="relative">
@@ -30,20 +36,20 @@ export function ModelSelector({ selectedModel, onSelect }: ModelSelectorProps) {
         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--foreground)] transition-all duration-200 text-sm h-8 active:scale-95"
       >
         {MODEL_ICONS[selectedModel]}
-        <span className="font-medium">{MISTRAL_MODELS[selectedModel].name}</span>
+        <span className="font-medium">{displayName}</span>
         <ChevronDown size={12} className={`text-[var(--muted-foreground)] transition-transform duration-300 ease-out ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-[60]" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 w-72 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-[70] overflow-hidden modal-panel">
+          <div className="absolute right-0 top-full mt-1 w-80 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-[70] overflow-hidden modal-panel">
             <div className="p-2 border-b border-[var(--border)]">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-2 py-1">
                 Select Model
               </p>
             </div>
-            <div className="max-h-[320px] overflow-y-auto p-1.5">
+            <div className="max-h-[400px] overflow-y-auto p-1.5">
               {Object.entries(MISTRAL_MODELS).map(([id, model], index) => (
                 <button
                   key={id}
@@ -64,6 +70,12 @@ export function ModelSelector({ selectedModel, onSelect }: ModelSelectorProps) {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <p className="text-sm font-medium">{model.name}</p>
+                      {id === 'auto' && (
+                        <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                          <Sparkles size={9} />
+                          Smart
+                        </span>
+                      )}
                       {model.supportsVision && (
                         <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
                           <Eye size={9} />

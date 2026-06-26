@@ -31,7 +31,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [currentChat, setCurrentChatState] = useState<Chat | null>(null);
   const [settings, setSettings] = useState<Settings>({
     apiKey: '',
-    defaultModel: 'mistral-small-latest',
+    defaultModel: 'auto',
     temperature: 0.7,
     maxTokens: 4096,
     systemPrompt: '',

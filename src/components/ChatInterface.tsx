@@ -6,8 +6,9 @@ import { Message } from '@/components/Message';
 import { ChatInput } from '@/components/ChatInput';
 import { ModelSelector } from '@/components/ModelSelector';
 import { streamChatCompletion, generateTitle } from '@/lib/mistral';
-import { Message as MessageType, Attachment, MistralModel } from '@/types';
-import { Menu, Share2, Check, AlertCircle, X, Plus } from 'lucide-react';
+import { detectModel } from '@/lib/auto-model';
+import { Message as MessageType, Attachment, MistralModel, ResolvedModel } from '@/types';
+import { Menu, Share2, Check, AlertCircle, X, Plus, Sparkles } from 'lucide-react';
 import { stripMarkdown } from '@/lib/utils';
 
 function getGreeting() {
@@ -44,6 +45,7 @@ export function ChatInterface() {
   const [copiedShare, setCopiedShare] = useState(false);
   const [showBanner, setShowBanner] = useState(true);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+  const [resolvedModel, setResolvedModel] = useState<ResolvedModel | null>(null);
 
   useEffect(() => {
     currentChatRef.current = currentChat;
@@ -80,6 +82,10 @@ export function ChatInterface() {
     }
 
     if (isGenerating && streamingChatRef.current === chat.id) return;
+
+    // Resolve auto model → actual model
+    const selectedModel = detectModel(content, attachments, chat.model);
+    setResolvedModel(selectedModel);
 
     const userMsgId = Math.random().toString(36).substring(2) + Date.now().toString(36);
     const assistantMsgId = Math.random().toString(36).substring(2) + Date.now().toString(36) + '-assistant';
@@ -123,7 +129,7 @@ export function ChatInterface() {
       for await (const chunk of streamChatCompletion(
         settings.apiKey,
         apiMessages,
-        chat.model,
+        selectedModel,
         settings.temperature,
         settings.maxTokens,
         settings.systemPrompt || undefined
@@ -282,7 +288,7 @@ export function ChatInterface() {
               <Plus size={14} />
               <span className="hidden sm:inline">New Chat</span>
             </button>
-            <ModelSelector selectedModel={currentChat?.model || 'mistral-small-latest'} onSelect={handleModelChange} />
+            <ModelSelector selectedModel={currentChat?.model || 'mistral-small-latest'} onSelect={handleModelChange} resolvedModel={resolvedModel} />
             <button
               onClick={handleShare}
               className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
@@ -307,7 +313,7 @@ export function ChatInterface() {
             </button>
           </div>
           <div className="flex items-center gap-1">
-            <ModelSelector selectedModel={currentChat?.model || 'mistral-small-latest'} onSelect={handleModelChange} />
+            <ModelSelector selectedModel={currentChat?.model || 'mistral-small-latest'} onSelect={handleModelChange} resolvedModel={resolvedModel} />
           </div>
         </header>
       )}

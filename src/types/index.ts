@@ -26,6 +26,7 @@ export interface Chat {
 }
 
 export type MistralModel = 
+  | 'auto'
   | 'mistral-small-latest'
   | 'mistral-medium-latest'
   | 'mistral-large-latest'
@@ -36,6 +37,7 @@ export type MistralModel =
   | 'pixtral-large-latest';
 
 export const MISTRAL_MODELS: Record<MistralModel, { name: string; description: string; contextWindow: number; supportsVision?: boolean }> = {
+  'auto': { name: 'Auto', description: 'AI picks the best model for the task', contextWindow: 128000 },
   'mistral-small-latest': { name: 'Mistral Small', description: 'Fast, balanced performance', contextWindow: 128000 },
   'mistral-medium-latest': { name: 'Mistral Medium', description: 'High quality responses', contextWindow: 128000 },
   'mistral-large-latest': { name: 'Mistral Large', description: 'Most capable model', contextWindow: 128000, supportsVision: true },
@@ -45,6 +47,8 @@ export const MISTRAL_MODELS: Record<MistralModel, { name: string; description: s
   'codestral-latest': { name: 'Codestral', description: 'Code generation specialist', contextWindow: 32000 },
   'pixtral-large-latest': { name: 'Pixtral Large', description: 'Vision + reasoning', contextWindow: 128000, supportsVision: true },
 };
+
+export type ResolvedModel = Exclude<MistralModel, 'auto'>;
 
 export interface Settings {
   apiKey: string;
