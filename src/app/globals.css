@@ -119,7 +119,11 @@ mark, .highlight {
 
 .card:hover {
   border-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.dark .card:hover {
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.08);
 }
 
 /* Buttons */
@@ -150,7 +154,11 @@ mark, .highlight {
 .btn-primary:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dark .btn-primary:hover {
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
 }
 
 .btn-primary:active {
@@ -326,6 +334,11 @@ button:focus-visible, a:focus-visible {
   outline-offset: 2px;
 }
 
+/* Remove focus ring on mouse click */
+button:focus:not(:focus-visible), a:focus:not(:focus-visible) {
+  outline: none;
+}
+
 input:focus, textarea:focus, select:focus {
   outline: none;
 }
@@ -404,10 +417,9 @@ input:focus::placeholder, textarea:focus::placeholder {
   background: #4a4a6a;
 }
 
-/* Smooth button press effect */
-.btn:active,
-button:active:not(.btn) {
-  transform: scale(0.97);
+/* Smooth button press effect - only on primary/secondary buttons */
+.btn:active {
+  transform: scale(0.98);
 }
 
 /* Prevent layout shift during page load */

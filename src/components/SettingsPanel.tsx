@@ -59,7 +59,7 @@ export function SettingsPanel() {
           </div>
           <button
             onClick={toggleSettings}
-            className="p-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
           >
             <X size={18} />
           </button>

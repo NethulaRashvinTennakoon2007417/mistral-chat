@@ -266,11 +266,11 @@ export function ChatInterface() {
     <div className="flex-1 flex flex-col bg-[var(--background)] h-screen relative">
       {/* Header - only show when there are messages */}
       {hasMessages && (
-        <header className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm sticky top-0 z-40">
+        <header className="flex items-center justify-between px-3 h-12 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm sticky top-0 z-40">
           <div className="flex items-center gap-2">
             <button
               onClick={toggleSidebar}
-              className="p-1.5 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
               title="Toggle sidebar (Ctrl+B)"
             >
               <Menu size={18} />
@@ -283,7 +283,7 @@ export function ChatInterface() {
             <ModelSelector selectedModel={currentChat?.model || 'mistral-small'} onSelect={handleModelChange} />
             <button
               onClick={handleShare}
-              className="p-1.5 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
               title="Share chat"
             >
               {copiedShare ? <Check size={16} /> : <Share2 size={16} />}
@@ -294,11 +294,11 @@ export function ChatInterface() {
 
       {/* Empty state header - just sidebar toggle */}
       {!hasMessages && (
-        <header className="flex items-center justify-between px-3 py-2 bg-[var(--background)] sticky top-0 z-40">
+        <header className="flex items-center justify-between px-3 h-12 bg-[var(--background)] sticky top-0 z-40">
           <div className="flex items-center gap-2">
             <button
               onClick={toggleSidebar}
-              className="p-1.5 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
               title="Toggle sidebar (Ctrl+B)"
             >
               <Menu size={18} />

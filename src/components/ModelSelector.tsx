@@ -29,7 +29,7 @@ export function ModelSelector({ selectedModel, onSelect }: ModelSelectorProps) {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors text-sm"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors text-sm h-8"
       >
         {MODEL_ICONS[selectedModel]}
         <span className="font-medium">{MISTRAL_MODELS[selectedModel].name}</span>

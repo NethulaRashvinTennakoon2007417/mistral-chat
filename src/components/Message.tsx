@@ -117,20 +117,20 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
             )}
           </div>
           {!editing && (
-            <div className="flex items-center justify-end gap-1 mt-1.5 px-1">
-              <span className="text-[10px] text-[var(--muted-foreground)]">
+            <div className="flex items-center justify-end gap-0 mt-1 px-1">
+              <span className="text-[10px] text-[var(--muted-foreground)] mr-1">
                 {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
               <button
                 onClick={copyToClipboard}
-                className="p-1 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                className="flex items-center justify-center w-6 h-6 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
                 title="Copy"
               >
                 {copied ? <Check size={12} /> : <Copy size={12} />}
               </button>
               <button
                 onClick={() => setEditing(true)}
-                className="p-1 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                className="flex items-center justify-center w-6 h-6 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
                 title="Edit"
               >
                 <Edit2 size={12} />
@@ -203,27 +203,27 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
               ) : null}
             </div>
             {message.content && !isStreaming && (
-              <div className="flex items-center gap-0.5 mt-1.5 px-1">
-                <span className="text-[10px] text-[var(--muted-foreground)]">
+              <div className="flex items-center gap-0 mt-1 px-1">
+                <span className="text-[10px] text-[var(--muted-foreground)] mr-1">
                   {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
                 <button
                   onClick={copyToClipboard}
-                  className="p-1 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                  className="flex items-center justify-center w-6 h-6 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
                   title="Copy"
                 >
                   {copied ? <Check size={12} /> : <Copy size={12} />}
                 </button>
                 <button
                   onClick={speak}
-                  className="p-1 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                  className="flex items-center justify-center w-6 h-6 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
                   title={speaking ? 'Stop reading' : 'Read aloud'}
                 >
                   {speaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
                 </button>
                 <button
                   onClick={() => setFeedback(feedback === 'up' ? null : 'up')}
-                  className={`p-1 rounded transition-colors ${
+                  className={`flex items-center justify-center w-6 h-6 rounded transition-colors ${
                     feedback === 'up'
                       ? 'text-orange-500 bg-orange-500/10'
                       : 'hover:bg-[var(--muted)] text-[var(--muted-foreground)]'
@@ -234,7 +234,7 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
                 </button>
                 <button
                   onClick={() => setFeedback(feedback === 'down' ? null : 'down')}
-                  className={`p-1 rounded transition-colors ${
+                  className={`flex items-center justify-center w-6 h-6 rounded transition-colors ${
                     feedback === 'down'
                       ? 'text-red-500 bg-red-500/10'
                       : 'hover:bg-[var(--muted)] text-[var(--muted-foreground)]'
@@ -246,7 +246,7 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
                 {isLatest && onRetry && (
                   <button
                     onClick={onRetry}
-                    className="p-1 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                    className="flex items-center justify-center w-6 h-6 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
                     title="Regenerate"
                   >
                     <RotateCcw size={12} />

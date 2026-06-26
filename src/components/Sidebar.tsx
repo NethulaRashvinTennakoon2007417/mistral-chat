@@ -98,7 +98,7 @@ export function Sidebar() {
             </div>
             <button
               onClick={toggleSidebar}
-              className="p-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
             >
               <X size={16} />
             </button>
@@ -156,14 +156,14 @@ export function Sidebar() {
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={(e) => handleRenameStart(e, chat)}
-                      className="p-1 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                      className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
                       title="Rename"
                     >
                       <Pencil size={12} />
                     </button>
                     <button
                       onClick={(e) => handleDelete(e, chat.id)}
-                      className={`p-1 rounded-md transition-all ${
+                      className={`flex items-center justify-center w-6 h-6 rounded-md transition-all ${
                         deletingId === chat.id
                           ? 'bg-[var(--destructive)] text-white opacity-100'
                           : 'hover:bg-[var(--destructive)] hover:text-white text-[var(--muted-foreground)]'
@@ -179,24 +179,24 @@ export function Sidebar() {
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-3 border-t border-[var(--border)]">
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={toggleTheme}
-              className="flex-1 btn btn-ghost text-sm py-2 justify-start gap-2"
-            >
-              {isDark ? <Sun size={14} /> : <Moon size={14} />}
-              {isDark ? 'Light' : 'Dark'}
-            </button>
-            <button
-              onClick={toggleSettings}
-              className="btn btn-ghost p-2"
-            >
-              <Settings size={14} />
-            </button>
-          </div>
+      {/* Footer */}
+      <div className="p-3 border-t border-[var(--border)]">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={toggleTheme}
+            className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors text-sm"
+          >
+            {isDark ? <Sun size={14} /> : <Moon size={14} />}
+            {isDark ? 'Light' : 'Dark'}
+          </button>
+          <button
+            onClick={toggleSettings}
+            className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+          >
+            <Settings size={14} />
+          </button>
         </div>
+      </div>
       </div>
     </>
   );

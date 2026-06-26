@@ -42,7 +42,6 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
     onSend(content, attachments.length > 0 ? attachments : undefined);
     setContent('');
     setAttachments([]);
-    // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -157,10 +156,10 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
 
           {/* Bottom Toolbar */}
           <div className="flex items-center justify-between px-3 pb-3">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-2 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
                 title="Attach file"
               >
                 <Plus size={18} />
@@ -177,7 +176,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
               {isRecording ? (
                 <button
                   onClick={stopRecording}
-                  className="p-2 rounded-lg text-red-500 animate-pulse-soft"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg text-red-500 animate-pulse-soft"
                   title="Stop recording"
                 >
                   <MicOff size={18} />
@@ -185,7 +184,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
               ) : (
                 <button
                   onClick={startRecording}
-                  className="p-2 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
                   title="Voice input"
                 >
                   <Mic size={18} />
@@ -193,11 +192,11 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
               )}
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               {isGenerating ? (
                 <button
                   onClick={onStop}
-                  className="p-2 rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity"
                   title="Stop generating"
                 >
                   <StopCircle size={18} />
@@ -206,7 +205,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
                 <button
                   onClick={handleSubmit}
                   disabled={!hasContent || disabled}
-                  className="p-2 rounded-lg bg-[var(--foreground)] text-[var(--background)] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--foreground)] text-[var(--background)] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
                   title="Send message"
                 >
                   <Send size={18} />
@@ -253,10 +252,10 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
       )}
 
       {/* Input */}
-      <div className="flex items-end gap-2 bg-[var(--card)] rounded-2xl border border-[var(--border)] transition-all duration-200">
+      <div className="flex items-center gap-1 bg-[var(--card)] rounded-2xl border border-[var(--border)] transition-all duration-200">
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="p-3 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+          className="flex items-center justify-center w-10 h-10 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors flex-shrink-0"
           title="Attach file"
         >
           <Plus size={18} />
@@ -276,7 +275,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="How can I help you today?"
-          className="flex-1 bg-transparent border-none outline-none resize-none text-[var(--foreground)] placeholder-[var(--muted-foreground)] py-3 min-h-[24px] max-h-[160px] text-[15px] leading-relaxed"
+          className="flex-1 bg-transparent border-none outline-none resize-none text-[var(--foreground)] placeholder-[var(--muted-foreground)] py-2.5 min-h-[40px] max-h-[160px] text-[15px] leading-relaxed"
           rows={1}
           disabled={disabled}
         />
@@ -284,7 +283,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
         {isRecording ? (
           <button
             onClick={stopRecording}
-            className="p-3 text-red-500 animate-pulse-soft"
+            className="flex items-center justify-center w-10 h-10 text-red-500 animate-pulse-soft flex-shrink-0"
             title="Stop recording"
           >
             <MicOff size={18} />
@@ -292,7 +291,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
         ) : (
           <button
             onClick={startRecording}
-            className="p-3 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+            className="flex items-center justify-center w-10 h-10 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors flex-shrink-0"
             title="Voice input"
           >
             <Mic size={18} />
@@ -302,7 +301,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
         {isGenerating ? (
           <button
             onClick={onStop}
-            className="p-3 bg-[var(--foreground)] text-[var(--background)] rounded-xl m-1 hover:opacity-90 transition-opacity"
+            className="flex items-center justify-center w-9 h-9 rounded-xl bg-[var(--foreground)] text-[var(--background)] mr-1.5 hover:opacity-90 transition-opacity flex-shrink-0"
             title="Stop generating"
           >
             <StopCircle size={16} />
@@ -311,7 +310,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
           <button
             onClick={handleSubmit}
             disabled={!hasContent || disabled}
-            className="p-3 bg-[var(--foreground)] text-[var(--background)] rounded-xl m-1 disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+            className="flex items-center justify-center w-9 h-9 rounded-xl bg-[var(--foreground)] text-[var(--background)] mr-1.5 disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-opacity flex-shrink-0"
             title="Send message"
           >
             <Send size={16} />
