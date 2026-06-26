@@ -27,13 +27,11 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
     if (editing && editRef.current) {
       editRef.current.focus();
       editRef.current.setSelectionRange(editRef.current.value.length, editRef.current.value.length);
-      // Auto-resize
       editRef.current.style.height = 'auto';
       editRef.current.style.height = editRef.current.scrollHeight + 'px';
     }
   }, [editing]);
 
-  // Auto-resize on content change
   useEffect(() => {
     if (editing && editRef.current) {
       editRef.current.style.height = 'auto';
@@ -95,9 +93,9 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
 
   if (message.role === 'user') {
     return (
-      <div className="flex justify-end mb-6 message-animate">
-        <div className="max-w-[85%]">
-          <div className="bg-[var(--primary)] text-white rounded-2xl rounded-tr-md px-5 py-3.5 shadow-sm">
+      <div className="flex justify-end mb-6 animate-message-in">
+        <div className="max-w-[85%] group">
+          <div className="bg-[var(--primary)] text-white rounded-2xl rounded-tr-md px-5 py-3.5 shadow-sm hover:shadow-md transition-shadow duration-200">
             {editing ? (
               <div className="space-y-2">
                 <textarea
@@ -105,19 +103,19 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
                   onKeyDown={handleEditKeyDown}
-                  className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm outline-none resize-none text-white placeholder-white/50 max-h-60 overflow-y-auto"
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm outline-none resize-none text-white placeholder-white/50 max-h-60 overflow-y-auto focus:border-white/40 transition-colors"
                   rows={1}
                 />
                 <div className="flex gap-2 justify-end">
                   <button
                     onClick={handleCancelEdit}
-                    className="text-xs px-3 py-1 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
+                    className="text-xs px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 transition-all duration-200 active:scale-95"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSaveEdit}
-                    className="text-xs px-3 py-1 rounded-md bg-white/20 hover:bg-white/30 transition-colors"
+                    className="text-xs px-3 py-1.5 rounded-md bg-white/20 hover:bg-white/30 transition-all duration-200 active:scale-95"
                   >
                     Save &amp; Submit
                   </button>
@@ -125,7 +123,6 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
               </div>
             ) : (
               <div>
-                {/* Image Attachments */}
                 {message.attachments && message.attachments.filter(a => a.url && a.type.startsWith('image/')).length > 0 && (
                   <div className="flex gap-2 flex-wrap mb-2">
                     {message.attachments.filter(a => a.url && a.type.startsWith('image/')).map(att => (
@@ -138,12 +135,11 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
                     ))}
                   </div>
                 )}
-                {/* File Badges */}
                 {message.attachments && message.attachments.filter(a => !a.type.startsWith('image/')).length > 0 && (
                   <div className="flex gap-1.5 flex-wrap mb-2">
                     {message.attachments.filter(a => !a.type.startsWith('image/')).map(att => (
                       <div key={att.id} className="flex items-center gap-1.5 px-2 py-1 bg-white/10 rounded-md text-xs">
-                        {att.type === 'application/pdf' ? <FileText size={10} /> : <FileText size={10} />}
+                        <FileText size={10} />
                         <span className="truncate max-w-[100px]">{att.name}</span>
                       </div>
                     ))}
@@ -154,20 +150,20 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
             )}
           </div>
           {!editing && (
-            <div className="flex items-center justify-end gap-0 mt-1 px-1">
+            <div className="flex items-center justify-end gap-0 mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               <span className="text-[10px] text-[var(--muted-foreground)] mr-1">
                 {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
               <button
                 onClick={copyToClipboard}
-                className="flex items-center justify-center w-6 h-6 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                className="flex items-center justify-center w-6 h-6 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
                 title="Copy"
               >
-                {copied ? <Check size={12} /> : <Copy size={12} />}
+                {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
               </button>
               <button
                 onClick={() => setEditing(true)}
-                className="flex items-center justify-center w-6 h-6 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                className="flex items-center justify-center w-6 h-6 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
                 title="Edit"
               >
                 <Edit2 size={12} />
@@ -181,14 +177,14 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
 
   // Assistant message
   return (
-    <div className="flex justify-start mb-6 message-animate">
-      <div className="max-w-[85%]">
+    <div className="flex justify-start mb-6 animate-message-in">
+      <div className="max-w-[85%] group">
         <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-sm ring-1 ring-orange-400/20">
             <Sparkles size={14} className="text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className={`bg-[var(--muted)] rounded-2xl rounded-tl-md px-5 py-3.5 transition-shadow duration-300 ${isStreaming ? 'message-streaming' : ''}`}>
+            <div className={`bg-[var(--muted)] rounded-2xl rounded-tl-md px-5 py-3.5 transition-all duration-300 ${isStreaming ? 'message-streaming' : 'hover:shadow-sm'}`}>
               {message.content ? (
                 <div className="markdown-content text-sm leading-relaxed">
                   <ReactMarkdown
@@ -198,13 +194,11 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
                         const code = String(children).replace(/\n$/, '');
                         if (match) {
                           return (
-                            <div className="relative group">
-                              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="relative group/code">
+                              <div className="absolute top-2 right-2 opacity-0 group-hover/code:opacity-100 transition-opacity duration-200">
                                 <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(code);
-                                  }}
-                                  className="text-xs px-2 py-1 rounded bg-[var(--background)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] border border-[var(--border)]"
+                                  onClick={() => navigator.clipboard.writeText(code)}
+                                  className="text-xs px-2 py-1 rounded bg-[var(--background)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] border border-[var(--border)] transition-all duration-200 active:scale-95"
                                 >
                                   Copy
                                 </button>
@@ -240,27 +234,27 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
               ) : null}
             </div>
             {message.content && !isStreaming && (
-              <div className="flex items-center gap-0 mt-1 px-1">
+              <div className="flex items-center gap-0 mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <span className="text-[10px] text-[var(--muted-foreground)] mr-1">
                   {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
                 <button
                   onClick={copyToClipboard}
-                  className="flex items-center justify-center w-6 h-6 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                  className="flex items-center justify-center w-6 h-6 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
                   title="Copy"
                 >
-                  {copied ? <Check size={12} /> : <Copy size={12} />}
+                  {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
                 </button>
                 <button
                   onClick={speak}
-                  className="flex items-center justify-center w-6 h-6 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                  className="flex items-center justify-center w-6 h-6 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
                   title={speaking ? 'Stop reading' : 'Read aloud'}
                 >
                   {speaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
                 </button>
                 <button
                   onClick={() => setFeedback(feedback === 'up' ? null : 'up')}
-                  className={`flex items-center justify-center w-6 h-6 rounded transition-colors ${
+                  className={`flex items-center justify-center w-6 h-6 rounded transition-all duration-200 active:scale-90 ${
                     feedback === 'up'
                       ? 'text-orange-500 bg-orange-500/10'
                       : 'hover:bg-[var(--muted)] text-[var(--muted-foreground)]'
@@ -271,7 +265,7 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
                 </button>
                 <button
                   onClick={() => setFeedback(feedback === 'down' ? null : 'down')}
-                  className={`flex items-center justify-center w-6 h-6 rounded transition-colors ${
+                  className={`flex items-center justify-center w-6 h-6 rounded transition-all duration-200 active:scale-90 ${
                     feedback === 'down'
                       ? 'text-red-500 bg-red-500/10'
                       : 'hover:bg-[var(--muted)] text-[var(--muted-foreground)]'
@@ -283,7 +277,7 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
                 {isLatest && onRetry && (
                   <button
                     onClick={onRetry}
-                    className="flex items-center justify-center w-6 h-6 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                    className="flex items-center justify-center w-6 h-6 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
                     title="Regenerate"
                   >
                     <RotateCcw size={12} />

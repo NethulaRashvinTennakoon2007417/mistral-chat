@@ -17,11 +17,11 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -30,7 +30,6 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
     }
   }, [content, variant]);
 
-  // Auto-focus on mount for centered variant
   useEffect(() => {
     if (variant === 'centered' && textareaRef.current) {
       textareaRef.current.focus();
@@ -42,9 +41,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
     onSend(content, attachments.length > 0 ? attachments : undefined);
     setContent('');
     setAttachments([]);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -68,7 +65,6 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
       };
 
       if (file.type === 'application/pdf') {
-        // Extract PDF text client-side
         try {
           const arrayBuffer = await file.arrayBuffer();
           const pdfjsLib = await import('pdfjs-dist');
@@ -88,8 +84,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
           attachment.extractedText = '[Could not extract text from PDF]';
         }
       } else if (file.type.startsWith('text/') || file.name.endsWith('.json') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
-        const text = await file.text();
-        attachment.content = text;
+        attachment.content = await file.text();
       }
 
       if (file.type.startsWith('image/')) {
@@ -138,11 +133,11 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
       <div className="relative">
         {/* Attachments */}
         {attachments.length > 0 && (
-          <div className="flex gap-2 flex-wrap mb-3">
+          <div className="flex gap-2 flex-wrap mb-3 animate-slide-up">
             {attachments.map((attachment) => (
               <div
                 key={attachment.id}
-                className="flex items-center gap-2 px-3 py-1.5 bg-[var(--muted)] rounded-lg text-xs border border-[var(--border)] group"
+                className="flex items-center gap-2 px-3 py-1.5 bg-[var(--muted)] rounded-lg text-xs border border-[var(--border)] group hover:border-[var(--primary)] transition-colors duration-200"
               >
                 {attachment.type.startsWith('image/') ? (
                   <Image size={12} className="text-[var(--muted-foreground)]" />
@@ -152,7 +147,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
                 <span className="max-w-[120px] truncate text-[var(--foreground)]">{attachment.name}</span>
                 <button
                   onClick={() => removeAttachment(attachment.id)}
-                  className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors opacity-0 group-hover:opacity-100"
+                  className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors opacity-0 group-hover:opacity-100 ml-1"
                 >
                   &times;
                 </button>
@@ -161,13 +156,21 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
           </div>
         )}
 
-        {/* Centered Input Box - Claude.ai style */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-sm transition-all duration-200">
+        {/* Centered Input Box */}
+        <div 
+          className={`bg-[var(--card)] border rounded-2xl transition-all duration-300 ease-out ${
+            isFocused 
+              ? 'border-[var(--primary)] shadow-[0_0_0_3px_rgba(217,119,6,0.08)]' 
+              : 'border-[var(--border)] shadow-sm hover:shadow-md hover:border-[var(--muted-foreground)]'
+          }`}
+        >
           <textarea
             ref={textareaRef}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
             placeholder="How can I help you today?"
             className="w-full bg-transparent border-none outline-none resize-none text-[var(--foreground)] placeholder-[var(--muted-foreground)] px-5 pt-5 pb-3 min-h-[60px] max-h-[200px] text-[15px] leading-relaxed"
             rows={1}
@@ -179,7 +182,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
             <div className="flex items-center gap-0.5">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all duration-200 active:scale-95"
                 title="Attach file"
               >
                 <Plus size={18} />
@@ -196,7 +199,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
               {isRecording ? (
                 <button
                   onClick={stopRecording}
-                  className="flex items-center justify-center w-9 h-9 rounded-lg text-red-500 animate-pulse-soft"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg text-red-500 bg-red-50 dark:bg-red-900/20 animate-pulse-soft"
                   title="Stop recording"
                 >
                   <MicOff size={18} />
@@ -204,7 +207,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
               ) : (
                 <button
                   onClick={startRecording}
-                  className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all duration-200 active:scale-95"
                   title="Voice input"
                 >
                   <Mic size={18} />
@@ -216,7 +219,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
               {isGenerating ? (
                 <button
                   onClick={onStop}
-                  className="flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-opacity"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-all duration-200 active:scale-95"
                   title="Stop generating"
                 >
                   <StopCircle size={18} />
@@ -225,7 +228,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
                 <button
                   onClick={handleSubmit}
                   disabled={!hasContent || disabled}
-                  className="flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--foreground)] text-[var(--background)] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                  className="flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--foreground)] text-[var(--background)] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all duration-200 active:scale-95"
                   title="Send message"
                 >
                   <Send size={18} />
@@ -236,7 +239,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
         </div>
 
         {/* Helper text */}
-        <p className="text-center text-xs text-[var(--muted-foreground)] mt-3">
+        <p className="text-center text-xs text-[var(--muted-foreground)] mt-3 opacity-60">
           AI can make mistakes. Please verify important information.
         </p>
       </div>
@@ -248,11 +251,11 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
     <div className="px-4 py-3">
       {/* Attachments */}
       {attachments.length > 0 && (
-        <div className="flex gap-2 flex-wrap mb-3">
+        <div className="flex gap-2 flex-wrap mb-3 animate-slide-up">
           {attachments.map((attachment) => (
             <div
               key={attachment.id}
-              className="flex items-center gap-2 px-3 py-1.5 bg-[var(--muted)] rounded-lg text-xs border border-[var(--border)] group"
+              className="flex items-center gap-2 px-3 py-1.5 bg-[var(--muted)] rounded-lg text-xs border border-[var(--border)] group hover:border-[var(--primary)] transition-colors duration-200"
             >
               {attachment.type.startsWith('image/') ? (
                 <Image size={12} className="text-[var(--muted-foreground)]" />
@@ -262,7 +265,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
               <span className="max-w-[120px] truncate text-[var(--foreground)]">{attachment.name}</span>
               <button
                 onClick={() => removeAttachment(attachment.id)}
-                className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors opacity-0 group-hover:opacity-100"
+                className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors opacity-0 group-hover:opacity-100 ml-1"
               >
                 &times;
               </button>
@@ -272,10 +275,16 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
       )}
 
       {/* Input */}
-      <div className="flex items-center gap-1 bg-[var(--card)] rounded-2xl border border-[var(--border)] transition-all duration-200">
+      <div 
+        className={`flex items-center gap-1 bg-[var(--card)] rounded-2xl border transition-all duration-300 ease-out ${
+          isFocused 
+            ? 'border-[var(--primary)] shadow-[0_0_0_3px_rgba(217,119,6,0.08)]' 
+            : 'border-[var(--border)] hover:shadow-sm hover:border-[var(--muted-foreground)]'
+        }`}
+      >
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="flex items-center justify-center w-10 h-10 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors flex-shrink-0"
+          className="flex items-center justify-center w-10 h-10 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all duration-200 flex-shrink-0 active:scale-95"
           title="Attach file"
         >
           <Plus size={18} />
@@ -294,6 +303,8 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           placeholder="How can I help you today?"
           className="flex-1 bg-transparent border-none outline-none resize-none text-[var(--foreground)] placeholder-[var(--muted-foreground)] py-2.5 min-h-[40px] max-h-[160px] text-[15px] leading-relaxed"
           rows={1}
@@ -303,7 +314,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
         {isRecording ? (
           <button
             onClick={stopRecording}
-            className="flex items-center justify-center w-10 h-10 text-red-500 animate-pulse-soft flex-shrink-0"
+            className="flex items-center justify-center w-10 h-10 text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg animate-pulse-soft flex-shrink-0"
             title="Stop recording"
           >
             <MicOff size={18} />
@@ -311,7 +322,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
         ) : (
           <button
             onClick={startRecording}
-            className="flex items-center justify-center w-10 h-10 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors flex-shrink-0"
+            className="flex items-center justify-center w-10 h-10 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all duration-200 flex-shrink-0 active:scale-95"
             title="Voice input"
           >
             <Mic size={18} />
@@ -321,7 +332,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
         {isGenerating ? (
           <button
             onClick={onStop}
-            className="flex items-center justify-center w-9 h-9 rounded-xl bg-[var(--foreground)] text-[var(--background)] mr-1.5 hover:opacity-90 transition-opacity flex-shrink-0"
+            className="flex items-center justify-center w-9 h-9 rounded-xl bg-[var(--foreground)] text-[var(--background)] mr-1.5 hover:opacity-90 transition-all duration-200 flex-shrink-0 active:scale-95"
             title="Stop generating"
           >
             <StopCircle size={16} />
@@ -330,7 +341,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
           <button
             onClick={handleSubmit}
             disabled={!hasContent || disabled}
-            className="flex items-center justify-center w-9 h-9 rounded-xl bg-[var(--foreground)] text-[var(--background)] mr-1.5 disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-opacity flex-shrink-0"
+            className="flex items-center justify-center w-9 h-9 rounded-xl bg-[var(--foreground)] text-[var(--background)] mr-1.5 disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-all duration-200 flex-shrink-0 active:scale-95"
             title="Send message"
           >
             <Send size={16} />

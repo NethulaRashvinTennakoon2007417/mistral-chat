@@ -27,7 +27,7 @@ export function ModelSelector({ selectedModel, onSelect }: ModelSelectorProps) {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--foreground)] transition-colors text-sm h-8"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--foreground)] transition-all duration-200 text-sm h-8 active:scale-95"
       >
         {MODEL_ICONS[selectedModel]}
         <span className="font-medium">{MISTRAL_MODELS[selectedModel].name}</span>
@@ -43,19 +43,20 @@ export function ModelSelector({ selectedModel, onSelect }: ModelSelectorProps) {
                 Select Model
               </p>
             </div>
-            <div className="max-h-[320px] overflow-y-auto p-1.5 stagger-children">
-              {Object.entries(MISTRAL_MODELS).map(([id, model]) => (
+            <div className="max-h-[320px] overflow-y-auto p-1.5">
+              {Object.entries(MISTRAL_MODELS).map(([id, model], index) => (
                 <button
                   key={id}
                   onClick={() => {
                     onSelect(id as MistralModel);
                     setIsOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 ${
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 animate-stagger-in ${
                     selectedModel === id
-                      ? 'bg-[var(--accent)] text-[var(--accent-foreground)]'
+                      ? 'bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm'
                       : 'hover:bg-[var(--muted)] text-[var(--foreground)] hover:translate-x-0.5'
                   }`}
+                  style={{ animationDelay: `${index * 30}ms` }}
                 >
                   <div className="flex-shrink-0">
                     {MODEL_ICONS[id]}

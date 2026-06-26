@@ -11,7 +11,6 @@ export function SettingsPanel() {
   const [showApiKey, setShowApiKey] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Sync local settings when panel opens
   useEffect(() => {
     if (settingsOpen) {
       setLocalSettings(settings);
@@ -19,7 +18,6 @@ export function SettingsPanel() {
     }
   }, [settingsOpen, settings]);
 
-  // Escape key to close
   useEffect(() => {
     if (!settingsOpen) return;
     const handleEscape = (e: KeyboardEvent) => {
@@ -29,7 +27,6 @@ export function SettingsPanel() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [settingsOpen, toggleSettings]);
 
-  // Click outside to close
   useEffect(() => {
     if (!settingsOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -59,7 +56,7 @@ export function SettingsPanel() {
           </div>
           <button
             onClick={toggleSettings}
-            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
           >
             <X size={18} />
           </button>
@@ -68,22 +65,22 @@ export function SettingsPanel() {
         {/* Content */}
         <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
           {/* API Key */}
-          <div>
+          <div className="animate-slide-up" style={{ animationDelay: '50ms' }}>
             <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
               API Key
             </label>
-            <div className="relative">
+            <div className="relative group">
               <input
                 type={showApiKey ? 'text' : 'password'}
                 value={localSettings.apiKey}
                 onChange={(e) => setLocalSettings((prev) => ({ ...prev, apiKey: e.target.value }))}
                 placeholder="Enter your Mistral API key"
-                className="input pr-10"
+                className="input pr-10 focus:border-[var(--primary)] focus:shadow-[0_0_0_3px_rgba(217,119,6,0.08)] transition-all duration-200"
               />
               <button
                 type="button"
                 onClick={() => setShowApiKey(!showApiKey)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all duration-200 active:scale-90"
               >
                 {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -94,7 +91,7 @@ export function SettingsPanel() {
                 href="https://console.mistral.ai/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[var(--primary)] hover:underline inline-flex items-center gap-0.5"
+                className="text-[var(--primary)] hover:underline inline-flex items-center gap-0.5 transition-colors duration-200"
               >
                 console.mistral.ai
                 <ExternalLink size={10} />
@@ -103,7 +100,7 @@ export function SettingsPanel() {
           </div>
 
           {/* Default Model */}
-          <div>
+          <div className="animate-slide-up" style={{ animationDelay: '100ms' }}>
             <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
               Default Model
             </label>
@@ -115,7 +112,7 @@ export function SettingsPanel() {
                   defaultModel: e.target.value as MistralModel,
                 }))
               }
-              className="input cursor-pointer"
+              className="input cursor-pointer hover:border-[var(--muted-foreground)] transition-all duration-200"
             >
               {Object.entries(MISTRAL_MODELS).map(([id, model]) => (
                 <option key={id} value={id}>
@@ -126,12 +123,12 @@ export function SettingsPanel() {
           </div>
 
           {/* Temperature */}
-          <div>
+          <div className="animate-slide-up" style={{ animationDelay: '150ms' }}>
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-semibold text-[var(--foreground)]">
                 Temperature
               </label>
-              <span className="text-sm font-mono text-[var(--primary)] bg-[var(--accent)] px-2 py-0.5 rounded">
+              <span className="text-sm font-mono text-[var(--primary)] bg-[var(--accent)] px-2 py-0.5 rounded transition-colors duration-200">
                 {localSettings.temperature.toFixed(2)}
               </span>
             </div>
@@ -147,7 +144,7 @@ export function SettingsPanel() {
                   temperature: parseFloat(e.target.value),
                 }))
               }
-              className="w-full h-2 bg-[var(--border)] rounded-lg appearance-none cursor-pointer accent-[var(--primary)]"
+              className="w-full h-2 bg-[var(--border)] rounded-lg appearance-none cursor-pointer accent-[var(--primary)] transition-all duration-200"
             />
             <div className="flex justify-between text-[10px] text-[var(--muted-foreground)] mt-1">
               <span>Precise (0)</span>
@@ -156,7 +153,7 @@ export function SettingsPanel() {
           </div>
 
           {/* Max Tokens */}
-          <div>
+          <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
             <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
               Max Tokens
             </label>
@@ -171,12 +168,12 @@ export function SettingsPanel() {
                   maxTokens: parseInt(e.target.value) || 4096,
                 }))
               }
-              className="input"
+              className="input hover:border-[var(--muted-foreground)] focus:border-[var(--primary)] focus:shadow-[0_0_0_3px_rgba(217,119,6,0.08)] transition-all duration-200"
             />
           </div>
 
           {/* System Prompt */}
-          <div>
+          <div className="animate-slide-up" style={{ animationDelay: '250ms' }}>
             <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
               System Prompt
               <span className="text-[var(--muted-foreground)] font-normal ml-1">(optional)</span>
@@ -191,7 +188,7 @@ export function SettingsPanel() {
               }
               placeholder="Customize the AI's behavior..."
               rows={3}
-              className="input resize-none"
+              className="input resize-none hover:border-[var(--muted-foreground)] focus:border-[var(--primary)] focus:shadow-[0_0_0_3px_rgba(217,119,6,0.08)] transition-all duration-200"
             />
           </div>
         </div>

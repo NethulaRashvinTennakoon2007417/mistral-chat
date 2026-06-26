@@ -44,7 +44,6 @@ export function ChatInterface() {
   const [showBanner, setShowBanner] = useState(true);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
 
-  // Keep ref in sync for stale closure prevention
   useEffect(() => {
     currentChatRef.current = currentChat;
   }, [currentChat]);
@@ -57,7 +56,6 @@ export function ChatInterface() {
     scrollToBottom();
   }, [currentChat?.messages, scrollToBottom]);
 
-  // Keyboard shortcut: Cmd/Ctrl+B to toggle sidebar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
@@ -80,7 +78,6 @@ export function ChatInterface() {
       chat = createNewChat();
     }
 
-    // Prevent double-sending while streaming
     if (isGenerating && streamingChatRef.current === chat.id) return;
 
     const userMsgId = Math.random().toString(36).substring(2) + Date.now().toString(36);
@@ -101,12 +98,10 @@ export function ChatInterface() {
       timestamp: new Date(),
     };
 
-    // Add both messages to chat
     const messagesWithBoth = [...chat.messages, userMsg, assistantMsg];
     const updatedChat = { ...chat, messages: messagesWithBoth, updatedAt: new Date() };
     updateChat(updatedChat);
 
-    // Generate title for first message
     if (chat.messages.length === 0) {
       generateTitle(settings.apiKey, content, chat.model)
         .then((title) => {
@@ -132,12 +127,10 @@ export function ChatInterface() {
         settings.maxTokens,
         settings.systemPrompt || undefined
       )) {
-        // Check if aborted
         if (abortControllerRef.current?.signal.aborted) break;
 
         responseContent += chunk;
 
-        // Use functional update to avoid stale closure
         updateChat((prev) => {
           if (!prev) return prev;
           const updatedMessages = prev.messages.map((msg) =>
@@ -181,7 +174,6 @@ export function ChatInterface() {
     const chat = currentChatRef.current;
     if (!chat || chat.messages.length < 2) return;
 
-    // Find the last user message BEFORE modifying state
     const lastMsg = chat.messages[chat.messages.length - 1];
     const secondLastMsg = chat.messages[chat.messages.length - 2];
 
@@ -195,14 +187,12 @@ export function ChatInterface() {
 
     if (!lastUserMessage) return;
 
-    // Remove messages up to and including the last user message
     const userMsgIndex = chat.messages.findIndex((m) => m.id === lastUserMessage!.id);
     updateChat({
       ...chat,
       messages: chat.messages.slice(0, userMsgIndex),
     });
 
-    // Resend with the captured message data (no stale closure)
     setTimeout(() => {
       handleSend(lastUserMessage!.content, lastUserMessage!.attachments);
     }, 50);
@@ -217,7 +207,6 @@ export function ChatInterface() {
 
     const targetMsg = chat.messages[msgIndex];
 
-    // If editing a user message, remove it and the response, then resend
     if (targetMsg.role === 'user') {
       updateChat({
         ...chat,
@@ -228,7 +217,6 @@ export function ChatInterface() {
         handleSend(content, targetMsg.attachments);
       }, 50);
     } else {
-      // Editing assistant message - just update content
       const updatedMessages = chat.messages.map((msg, i) =>
         i === msgIndex ? { ...msg, content } : msg
       );
@@ -271,11 +259,11 @@ export function ChatInterface() {
     <div className="flex-1 flex flex-col bg-[var(--background)] h-screen relative">
       {/* Header - only show when there are messages */}
       {hasMessages && (
-        <header className="flex items-center justify-between px-3 h-12 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm sticky top-0 z-40">
+        <header className="flex items-center justify-between px-3 h-12 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm sticky top-0 z-40 animate-slide-down">
           <div className="flex items-center gap-2">
             <button
               onClick={toggleSidebar}
-              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
               title="Toggle sidebar (Ctrl+B)"
             >
               <Menu size={18} />
@@ -287,7 +275,7 @@ export function ChatInterface() {
           <div className="flex items-center gap-1">
             <button
               onClick={() => createNewChat()}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors text-sm h-8"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 text-sm h-8 active:scale-95"
               title="New Chat"
             >
               <Plus size={14} />
@@ -296,10 +284,10 @@ export function ChatInterface() {
             <ModelSelector selectedModel={currentChat?.model || 'mistral-small-latest'} onSelect={handleModelChange} />
             <button
               onClick={handleShare}
-              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
               title="Share chat"
             >
-              {copiedShare ? <Check size={16} /> : <Share2 size={16} />}
+              {copiedShare ? <Check size={16} className="text-green-500" /> : <Share2 size={16} />}
             </button>
           </div>
         </header>
@@ -311,7 +299,7 @@ export function ChatInterface() {
           <div className="flex items-center gap-2">
             <button
               onClick={toggleSidebar}
-              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
               title="Toggle sidebar (Ctrl+B)"
             >
               <Menu size={18} />
@@ -325,18 +313,18 @@ export function ChatInterface() {
 
       {/* Status Banner */}
       {!settings.apiKey && showBanner && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/30 px-4 py-2.5 flex items-center justify-between">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/30 px-4 py-2.5 flex items-center justify-between animate-slide-down">
           <div className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-200">
             <AlertCircle size={16} />
             <span>Set your API key in Settings to start chatting</span>
             <button
               onClick={toggleSettings}
-              className="underline font-medium hover:no-underline"
+              className="underline font-medium hover:no-underline transition-all duration-200"
             >
               Open Settings
             </button>
           </div>
-          <button onClick={() => setShowBanner(false)} className="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200">
+          <button onClick={() => setShowBanner(false)} className="text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 transition-colors duration-200">
             <X size={16} />
           </button>
         </div>
@@ -373,7 +361,7 @@ export function ChatInterface() {
                 </p>
               </div>
 
-              {/* Centered Input - Claude.ai style */}
+              {/* Centered Input */}
               <div className="w-full max-w-2xl px-4 hero-animate" style={{ animationDelay: '100ms' }}>
                 <div className="relative">
                   <ChatInput
@@ -407,7 +395,7 @@ export function ChatInterface() {
 
       {/* Bottom Input - when there are messages */}
       {hasMessages && (
-        <div className="border-t border-[var(--border)] bg-[var(--background)]">
+        <div className="border-t border-[var(--background)] bg-[var(--background)]">
           <div className="max-w-3xl mx-auto">
             <ChatInput
               onSend={handleSend}
