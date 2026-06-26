@@ -7,7 +7,7 @@ import { ChatInput } from '@/components/ChatInput';
 import { ModelSelector } from '@/components/ModelSelector';
 import { streamChatCompletion, generateTitle } from '@/lib/mistral';
 import { Message as MessageType, Attachment, MistralModel } from '@/types';
-import { Menu, Share2, Check, AlertCircle, X } from 'lucide-react';
+import { Menu, Share2, Check, AlertCircle, X, Plus } from 'lucide-react';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -30,7 +30,6 @@ export function ChatInterface() {
     settings,
     isGenerating,
     toggleSidebar,
-    addMessage,
     updateChat,
     setIsGenerating,
     createNewChat,
@@ -40,9 +39,15 @@ export function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const streamingChatRef = useRef<string | null>(null);
+  const currentChatRef = useRef(currentChat);
   const [copiedShare, setCopiedShare] = useState(false);
   const [showBanner, setShowBanner] = useState(true);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+
+  // Keep ref in sync for stale closure prevention
+  useEffect(() => {
+    currentChatRef.current = currentChat;
+  }, [currentChat]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -70,7 +75,7 @@ export function ChatInterface() {
       return;
     }
 
-    let chat = currentChat;
+    let chat = currentChatRef.current;
     if (!chat) {
       chat = createNewChat();
     }
@@ -146,7 +151,6 @@ export function ChatInterface() {
         console.log('Generation aborted');
       } else {
         console.error('Generation failed:', error);
-        // Add error message
         const errorMsg: MessageType = {
           id: Math.random().toString(36).substring(2) + Date.now().toString(36) + '-error',
           role: 'assistant',
@@ -174,60 +178,61 @@ export function ChatInterface() {
   };
 
   const handleRetry = () => {
-    if (!currentChat || currentChat.messages.length < 2) return;
+    const chat = currentChatRef.current;
+    if (!chat || chat.messages.length < 2) return;
 
-    // Find the last user message
-    const lastMsg = currentChat.messages[currentChat.messages.length - 1];
-    const secondLastMsg = currentChat.messages[currentChat.messages.length - 2];
+    // Find the last user message BEFORE modifying state
+    const lastMsg = chat.messages[chat.messages.length - 1];
+    const secondLastMsg = chat.messages[chat.messages.length - 2];
 
     let lastUserMessage: MessageType | undefined;
 
     if (lastMsg.role === 'user') {
       lastUserMessage = lastMsg;
-      // Remove the last user message
-      updateChat({
-        ...currentChat,
-        messages: currentChat.messages.slice(0, -1),
-      });
     } else if (secondLastMsg?.role === 'user') {
       lastUserMessage = secondLastMsg;
-      // Remove last assistant + last user message
-      updateChat({
-        ...currentChat,
-        messages: currentChat.messages.slice(0, -2),
-      });
     }
 
-    if (lastUserMessage) {
-      // Small delay to let state update, then resend
-      setTimeout(() => {
-        handleSend(lastUserMessage!.content, lastUserMessage!.attachments);
-      }, 50);
-    }
+    if (!lastUserMessage) return;
+
+    // Remove messages up to and including the last user message
+    const userMsgIndex = chat.messages.findIndex((m) => m.id === lastUserMessage!.id);
+    updateChat({
+      ...chat,
+      messages: chat.messages.slice(0, userMsgIndex),
+    });
+
+    // Resend with the captured message data (no stale closure)
+    setTimeout(() => {
+      handleSend(lastUserMessage!.content, lastUserMessage!.attachments);
+    }, 50);
   };
 
   const handleEditMessage = (messageId: string, content: string) => {
-    if (!currentChat) return;
+    const chat = currentChatRef.current;
+    if (!chat) return;
 
-    // Find the message and the one after it (should be assistant response)
-    const msgIndex = currentChat.messages.findIndex((m) => m.id === messageId);
+    const msgIndex = chat.messages.findIndex((m) => m.id === messageId);
     if (msgIndex === -1) return;
 
-    const updatedMessages = currentChat.messages.map((msg, i) =>
-      i === msgIndex ? { ...msg, content } : msg
-    );
+    const targetMsg = chat.messages[msgIndex];
 
-    // If editing a user message, also remove the assistant response after it
-    if (currentChat.messages[msgIndex]?.role === 'user' && msgIndex + 1 < currentChat.messages.length) {
-      const newMessages = updatedMessages.slice(0, msgIndex + 1);
-      updateChat({ ...currentChat, messages: newMessages });
+    // If editing a user message, remove it and the response, then resend
+    if (targetMsg.role === 'user') {
+      updateChat({
+        ...chat,
+        messages: chat.messages.slice(0, msgIndex),
+      });
 
-      // Resend with edited content
       setTimeout(() => {
-        handleSend(content, currentChat.messages[msgIndex].attachments);
+        handleSend(content, targetMsg.attachments);
       }, 50);
     } else {
-      updateChat({ ...currentChat, messages: updatedMessages });
+      // Editing assistant message - just update content
+      const updatedMessages = chat.messages.map((msg, i) =>
+        i === msgIndex ? { ...msg, content } : msg
+      );
+      updateChat({ ...chat, messages: updatedMessages });
     }
   };
 
@@ -280,6 +285,14 @@ export function ChatInterface() {
             </span>
           </div>
           <div className="flex items-center gap-1">
+            <button
+              onClick={() => createNewChat()}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors text-sm h-8"
+              title="New Chat"
+            >
+              <Plus size={14} />
+              <span className="hidden sm:inline">New Chat</span>
+            </button>
             <ModelSelector selectedModel={currentChat?.model || 'mistral-small'} onSelect={handleModelChange} />
             <button
               onClick={handleShare}
@@ -354,14 +367,14 @@ export function ChatInterface() {
             /* Empty State - Claude.ai style */
             <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] animate-fade-in">
               {/* Greeting */}
-              <div className="text-center mb-8">
-                <p className="text-2xl font-semibold text-[var(--foreground)] mb-1">
+              <div className="text-center mb-8 px-4">
+                <p className="text-2xl sm:text-3xl font-semibold text-[var(--foreground)]">
                   {getGreeting()}
                 </p>
               </div>
 
               {/* Centered Input - Claude.ai style */}
-              <div className="w-full max-w-2xl">
+              <div className="w-full max-w-2xl px-4">
                 <div className="relative">
                   <ChatInput
                     onSend={handleSend}

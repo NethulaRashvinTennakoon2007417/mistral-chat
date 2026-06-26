@@ -2,13 +2,12 @@
 
 import { useChat } from '@/context/ChatContext';
 import { formatRelativeTime } from '@/lib/utils';
-import { Plus, MessageSquare, Trash2, X, Settings, Moon, Sun, Sparkles, Pencil, Check } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, X, Settings, Moon, Sun, Sparkles, Pencil } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
 export function Sidebar() {
   const { chats, currentChat, createNewChat, setCurrentChat, removeChat, updateChat, sidebarOpen, toggleSidebar, toggleSettings } = useChat();
   const [isDark, setIsDark] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const editInputRef = useRef<HTMLInputElement>(null);
@@ -44,13 +43,7 @@ export function Sidebar() {
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (deletingId === id) {
-      removeChat(id);
-      setDeletingId(null);
-    } else {
-      setDeletingId(id);
-      setTimeout(() => setDeletingId(null), 3000);
-    }
+    removeChat(id);
   };
 
   const handleRenameStart = (e: React.MouseEvent, chat: { id: string; title: string }) => {
@@ -74,6 +67,10 @@ export function Sidebar() {
     if (e.key === 'Escape') setEditingId(null);
   };
 
+  const handleGoHome = () => {
+    setCurrentChat(null);
+  };
+
   if (!sidebarOpen) {
     return null;
   }
@@ -90,12 +87,15 @@ export function Sidebar() {
         {/* Header */}
         <div className="p-4 border-b border-[var(--border)]">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2.5">
+            <button
+              onClick={handleGoHome}
+              className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
+            >
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-md shadow-orange-500/20">
                 <Sparkles size={16} className="text-white" />
               </div>
               <span className="text-base font-bold text-[var(--foreground)]">Mistral Chat</span>
-            </div>
+            </button>
             <button
               onClick={toggleSidebar}
               className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
@@ -163,14 +163,10 @@ export function Sidebar() {
                     </button>
                     <button
                       onClick={(e) => handleDelete(e, chat.id)}
-                      className={`flex items-center justify-center w-6 h-6 rounded-md transition-all ${
-                        deletingId === chat.id
-                          ? 'bg-[var(--destructive)] text-white opacity-100'
-                          : 'hover:bg-[var(--destructive)] hover:text-white text-[var(--muted-foreground)]'
-                      }`}
-                      title={deletingId === chat.id ? 'Click again to confirm' : 'Delete'}
+                      className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-[var(--destructive)] hover:text-white text-[var(--muted-foreground)] transition-colors"
+                      title="Delete"
                     >
-                      {deletingId === chat.id ? <Check size={12} /> : <Trash2 size={12} />}
+                      <Trash2 size={12} />
                     </button>
                   </div>
                 </div>
@@ -179,24 +175,24 @@ export function Sidebar() {
           )}
         </div>
 
-      {/* Footer */}
-      <div className="p-3 border-t border-[var(--border)]">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={toggleTheme}
-            className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors text-sm"
-          >
-            {isDark ? <Sun size={14} /> : <Moon size={14} />}
-            {isDark ? 'Light' : 'Dark'}
-          </button>
-          <button
-            onClick={toggleSettings}
-            className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
-          >
-            <Settings size={14} />
-          </button>
+        {/* Footer */}
+        <div className="p-3 border-t border-[var(--border)]">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleTheme}
+              className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors text-sm"
+            >
+              {isDark ? <Sun size={14} /> : <Moon size={14} />}
+              {isDark ? 'Light' : 'Dark'}
+            </button>
+            <button
+              onClick={toggleSettings}
+              className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+            >
+              <Settings size={14} />
+            </button>
+          </div>
         </div>
-      </div>
       </div>
     </>
   );

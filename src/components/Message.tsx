@@ -27,8 +27,19 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
     if (editing && editRef.current) {
       editRef.current.focus();
       editRef.current.setSelectionRange(editRef.current.value.length, editRef.current.value.length);
+      // Auto-resize
+      editRef.current.style.height = 'auto';
+      editRef.current.style.height = editRef.current.scrollHeight + 'px';
     }
   }, [editing]);
+
+  // Auto-resize on content change
+  useEffect(() => {
+    if (editing && editRef.current) {
+      editRef.current.style.height = 'auto';
+      editRef.current.style.height = editRef.current.scrollHeight + 'px';
+    }
+  }, [editContent, editing]);
 
   const copyToClipboard = async () => {
     try {
@@ -94,8 +105,8 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
                   onKeyDown={handleEditKeyDown}
-                  className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm outline-none resize-none text-white placeholder-white/50"
-                  rows={3}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm outline-none resize-none text-white placeholder-white/50 max-h-60 overflow-y-auto"
+                  rows={1}
                 />
                 <div className="flex gap-2 justify-end">
                   <button
