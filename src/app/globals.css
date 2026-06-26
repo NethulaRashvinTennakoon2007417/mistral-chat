@@ -236,11 +236,6 @@ button:not(.btn):active:not(:disabled) {
 .input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-.dark .input:focus {
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
 }
 
 .input::placeholder {
@@ -256,12 +251,6 @@ textarea {
 
 textarea:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-.dark textarea:focus {
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
 }
 
 /* ============================================
