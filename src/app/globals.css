@@ -68,6 +68,10 @@
   --ring: #d97706;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 * {
   box-sizing: border-box;
 }
