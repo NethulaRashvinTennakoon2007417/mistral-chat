@@ -9,11 +9,11 @@
   --muted-foreground: #6c757d;
   --border: #e9ecef;
   --input: #f8f9fa;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
+  --primary: #d97706;
+  --primary-hover: #b45309;
   --primary-foreground: #ffffff;
-  --accent: #f0f7ff;
-  --accent-foreground: #2563eb;
+  --accent: #fff7ed;
+  --accent-foreground: #d97706;
   --success: #10b981;
   --warning: #f59e0b;
   --destructive: #ef4444;
@@ -21,7 +21,7 @@
   --card-border: #e9ecef;
   --card-hover: #f8f9fa;
   --code-bg: #f1f3f5;
-  --ring: #2563eb;
+  --ring: #d97706;
 }
 
 .dark {
@@ -46,6 +46,28 @@
   --ring: #d97706;
 }
 
+.cream {
+  --background: #faf8f5;
+  --foreground: #2d2a26;
+  --muted: #f0ece6;
+  --muted-foreground: #7a7268;
+  --border: #e5dfd7;
+  --input: #f0ece6;
+  --primary: #d97706;
+  --primary-hover: #b45309;
+  --primary-foreground: #ffffff;
+  --accent: #fef3e2;
+  --accent-foreground: #d97706;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --destructive: #ef4444;
+  --card: #ffffff;
+  --card-border: #e5dfd7;
+  --card-hover: #f0ece6;
+  --code-bg: #f0ece6;
+  --ring: #d97706;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -57,8 +79,23 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Smooth theme transition */
-  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth theme transition on all elements */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, box-shadow, fill, stroke, outline-color;
+  transition-duration: 0s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body *, body *::before, body *::after {
+  transition-duration: 0.35s;
+}
+
+/* Let interactive elements keep their own transition timing for hover/press */
+button, a, .btn, .card, summary, [role="button"] {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Scrollbar - smooth */
@@ -555,6 +592,10 @@ html {
 
 .dark ::selection {
   background: rgba(217, 119, 6, 0.3);
+}
+
+.cream ::selection {
+  background: rgba(217, 119, 6, 0.2);
 }
 
 /* ============================================

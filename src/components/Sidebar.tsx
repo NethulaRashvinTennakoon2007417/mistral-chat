@@ -2,21 +2,26 @@
 
 import { useChat } from '@/context/ChatContext';
 import { formatRelativeTime } from '@/lib/utils';
-import { Plus, MessageSquare, Trash2, X, Settings, Moon, Sun, Sparkles, Pencil } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, X, Settings, Moon, Sun, Coffee, Sparkles, Pencil } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+
+type Theme = 'light' | 'dark' | 'cream';
 
 export function Sidebar() {
   const { chats, currentChat, createNewChat, setCurrentChat, removeChat, updateChat, sidebarOpen, toggleSidebar, toggleSettings } = useChat();
-  const [isDark, setIsDark] = useState(false);
+  const [theme, setTheme] = useState<Theme>('light');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const editInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      setIsDark(true);
-      document.documentElement.classList.add('dark');
+    const saved = localStorage.getItem('theme') as Theme | null;
+    if (saved && ['light', 'dark', 'cream'].includes(saved)) {
+      setTheme(saved);
+      document.documentElement.className = saved === 'dark' ? 'dark' : saved === 'cream' ? 'cream' : '';
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark');
+      document.documentElement.className = 'dark';
     }
   }, []);
 
@@ -27,19 +32,15 @@ export function Sidebar() {
     }
   }, [editingId]);
 
-  const toggleTheme = () => {
-    setIsDark((prev) => {
-      const next = !prev;
-      if (next) {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-      }
-      return next;
-    });
+  const cycleTheme = () => {
+    const next: Theme = theme === 'light' ? 'dark' : theme === 'dark' ? 'cream' : 'light';
+    setTheme(next);
+    document.documentElement.className = next === 'dark' ? 'dark' : next === 'cream' ? 'cream' : '';
+    localStorage.setItem('theme', next);
   };
+
+  const ThemeIcon = theme === 'dark' ? Moon : theme === 'cream' ? Coffee : Sun;
+  const themeLabel = theme === 'dark' ? 'Dark' : theme === 'cream' ? 'Cream' : 'Light';
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -179,11 +180,11 @@ export function Sidebar() {
         <div className="p-3 border-t border-[var(--border)]">
           <div className="flex items-center gap-1">
             <button
-              onClick={toggleTheme}
+              onClick={cycleTheme}
               className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors text-sm"
             >
-              {isDark ? <Sun size={14} /> : <Moon size={14} />}
-              {isDark ? 'Light' : 'Dark'}
+              <ThemeIcon size={14} />
+              {themeLabel}
             </button>
             <button
               onClick={toggleSettings}
