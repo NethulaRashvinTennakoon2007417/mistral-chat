@@ -27,7 +27,7 @@ function AppContent() {
       <SettingsPanel />
 
       {/* Main Content */}
-      <div className={`${sidebarOpen ? 'ml-72' : 'ml-0'} transition-all duration-300`}>
+      <div className={`${sidebarOpen ? 'ml-72' : 'ml-0'} transition-all duration-300 ease-out`}>
         {/* Header */}
         <header className="border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm sticky top-0 z-40">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -48,16 +48,17 @@ function AppContent() {
         {/* Hero Section */}
         <main className="max-w-5xl mx-auto px-6 py-16">
           <div className="text-center mb-16">
-            <h1 className="text-5xl font-bold text-[var(--foreground)] mb-4 leading-tight">
+            <h1 className="text-5xl font-bold text-[var(--foreground)] mb-4 leading-tight hero-animate">
               Chat with <mark className="highlight">Mistral AI</mark>
             </h1>
-            <p className="text-lg text-[var(--muted-foreground)] max-w-2xl mx-auto mb-8">
+            <p className="text-lg text-[var(--muted-foreground)] max-w-2xl mx-auto mb-8 hero-animate" style={{ animationDelay: '80ms' }}>
               Free, fast, and private. Chat with multiple Mistral models right in your browser.
               Nothing is stored on servers.
             </p>
             <button
               onClick={() => createNewChat()}
-              className="btn btn-primary text-base px-8 py-3 rounded-xl shadow-lg shadow-orange-500/25"
+              className="btn btn-primary text-base px-8 py-3 rounded-xl shadow-lg shadow-orange-500/25 hero-animate"
+              style={{ animationDelay: '160ms' }}
             >
               <MessageSquare size={18} />
               Start chatting
@@ -66,7 +67,7 @@ function AppContent() {
           </div>
 
           {/* Features Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 stagger-children">
             <div className="card p-6">
               <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center mb-4">
                 <Zap size={24} className="text-blue-500" />
@@ -98,10 +99,10 @@ function AppContent() {
 
           {/* Models Section */}
           <div className="mb-16">
-            <h2 className="text-2xl font-bold text-[var(--foreground)] mb-6 text-center">
+            <h2 className="text-2xl font-bold text-[var(--foreground)] mb-6 text-center hero-animate">
               Available <mark className="highlight">Models</mark>
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
               {[
                 { name: 'Mistral Tiny', desc: 'Fastest, most cost-effective', badge: 'Fast' },
                 { name: 'Mistral Small', desc: 'Balanced performance', badge: 'Balanced' },
@@ -125,10 +126,10 @@ function AppContent() {
 
           {/* FAQ Section */}
           <div className="max-w-3xl mx-auto mb-16">
-            <h2 className="text-2xl font-bold text-[var(--foreground)] mb-6 text-center">
+            <h2 className="text-2xl font-bold text-[var(--foreground)] mb-6 text-center hero-animate">
               Frequently Asked <mark className="highlight">Questions</mark>
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-3 stagger-children">
               {[
                 { q: 'Is Mistral Chat free?', a: 'Yes. The interface is completely free. You only need a Mistral API key, which has a generous free tier.' },
                 { q: 'Are my chats stored anywhere?', a: 'No. Everything stays in your browser using localStorage. Nothing is sent to our servers.' },
@@ -138,7 +139,7 @@ function AppContent() {
                 <details key={i} className="card group">
                   <summary className="p-4 cursor-pointer font-medium text-[var(--foreground)] hover:text-[var(--primary)] transition-colors list-none flex items-center justify-between">
                     {faq.q}
-                    <ChevronRight size={16} className="text-[var(--muted-foreground)] group-open:rotate-90 transition-transform" />
+                    <ChevronRight size={16} className="text-[var(--muted-foreground)] transition-transform duration-300 ease-out group-open:rotate-90" />
                   </summary>
                   <div className="px-4 pb-4 text-sm text-[var(--muted-foreground)]">
                     {faq.a}
@@ -149,7 +150,7 @@ function AppContent() {
           </div>
 
           {/* CTA Section */}
-          <div className="text-center card p-12 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-orange-100 dark:border-orange-800/30">
+          <div className="text-center card p-12 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-orange-100 dark:border-orange-800/30 hero-animate">
             <h2 className="text-2xl font-bold text-[var(--foreground)] mb-3">
               Ready to start chatting?
             </h2>

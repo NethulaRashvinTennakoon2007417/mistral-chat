@@ -365,16 +365,16 @@ export function ChatInterface() {
             </div>
           ) : (
             /* Empty State - Claude.ai style */
-            <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] animate-fade-in">
+            <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
               {/* Greeting */}
-              <div className="text-center mb-8 px-4">
+              <div className="text-center mb-8 px-4 hero-animate">
                 <p className="text-2xl sm:text-3xl font-semibold text-[var(--foreground)]">
                   {getGreeting()}
                 </p>
               </div>
 
               {/* Centered Input - Claude.ai style */}
-              <div className="w-full max-w-2xl px-4">
+              <div className="w-full max-w-2xl px-4 hero-animate" style={{ animationDelay: '100ms' }}>
                 <div className="relative">
                   <ChatInput
                     onSend={handleSend}
@@ -386,13 +386,13 @@ export function ChatInterface() {
                 </div>
 
                 {/* Prompt Categories */}
-                <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
+                <div className="flex items-center justify-center gap-2 mt-4 flex-wrap stagger-children">
                   {PROMPT_CATEGORIES.map((cat) => (
                     <button
                       key={cat.label}
                       onClick={() => handlePromptCategory(cat.prompt)}
                       disabled={isGenerating || !settings.apiKey}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--border)] text-sm text-[var(--foreground)] hover:bg-[var(--muted)] hover:border-[var(--primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--border)] text-sm text-[var(--foreground)] hover:bg-[var(--muted)] hover:border-[var(--primary)] hover:scale-105 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span>{cat.icon}</span>
                       <span>{cat.label}</span>

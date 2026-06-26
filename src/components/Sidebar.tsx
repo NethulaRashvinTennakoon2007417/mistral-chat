@@ -127,10 +127,10 @@ export function Sidebar() {
               {chats.map((chat) => (
                 <div
                   key={chat.id}
-                  className={`group flex items-center gap-2.5 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-150 ${
+                  className={`group flex items-center gap-2.5 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 ease-out ${
                     currentChat?.id === chat.id
                       ? 'bg-[var(--accent)] text-[var(--accent-foreground)]'
-                      : 'hover:bg-[var(--muted)] text-[var(--foreground)]'
+                      : 'hover:bg-[var(--muted)] text-[var(--foreground)] hover:translate-x-0.5'
                   }`}
                   onClick={() => setCurrentChat(chat)}
                 >

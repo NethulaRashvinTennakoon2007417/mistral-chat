@@ -33,19 +33,19 @@ export function ModelSelector({ selectedModel, onSelect }: ModelSelectorProps) {
       >
         {MODEL_ICONS[selectedModel]}
         <span className="font-medium">{MISTRAL_MODELS[selectedModel].name}</span>
-        <ChevronDown size={12} className={`text-[var(--muted-foreground)] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={12} className={`text-[var(--muted-foreground)] transition-transform duration-300 ease-out ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 w-72 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
+          <div className="absolute right-0 top-full mt-1 w-72 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-50 overflow-hidden modal-panel">
             <div className="p-2 border-b border-[var(--border)]">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-2 py-1">
                 Select Model
               </p>
             </div>
-            <div className="max-h-[320px] overflow-y-auto p-1.5">
+            <div className="max-h-[320px] overflow-y-auto p-1.5 stagger-children">
               {Object.entries(MISTRAL_MODELS).map(([id, model]) => (
                 <button
                   key={id}
@@ -53,10 +53,10 @@ export function ModelSelector({ selectedModel, onSelect }: ModelSelectorProps) {
                     onSelect(id as MistralModel);
                     setIsOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 ${
                     selectedModel === id
                       ? 'bg-[var(--accent)] text-[var(--accent-foreground)]'
-                      : 'hover:bg-[var(--muted)] text-[var(--foreground)]'
+                      : 'hover:bg-[var(--muted)] text-[var(--foreground)] hover:translate-x-0.5'
                   }`}
                 >
                   <div className="flex-shrink-0">

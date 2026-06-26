@@ -162,7 +162,7 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
             <Sparkles size={14} className="text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="bg-[var(--muted)] rounded-2xl rounded-tl-md px-5 py-3.5">
+            <div className={`bg-[var(--muted)] rounded-2xl rounded-tl-md px-5 py-3.5 transition-shadow duration-300 ${isStreaming ? 'message-streaming' : ''}`}>
               {message.content ? (
                 <div className="markdown-content text-sm leading-relaxed">
                   <ReactMarkdown
