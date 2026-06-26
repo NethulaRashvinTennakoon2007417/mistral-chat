@@ -1,7 +1,7 @@
 'use client';
 
 import { useChat } from '@/context/ChatContext';
-import { formatRelativeTime } from '@/lib/utils';
+import { formatRelativeTime, stripMarkdown } from '@/lib/utils';
 import { Plus, MessageSquare, Trash2, X, Settings, Moon, Sun, Coffee, Sparkles, Pencil } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
@@ -149,7 +149,7 @@ export function Sidebar() {
                         onClick={(e) => e.stopPropagation()}
                       />
                     ) : (
-                      <p className="text-sm font-medium truncate">{chat.title}</p>
+                      <p className="text-sm font-medium truncate">{stripMarkdown(chat.title)}</p>
                     )}
                     <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
                       {formatRelativeTime(chat.updatedAt)}

@@ -150,11 +150,11 @@ export async function generateTitle(
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'mistral-tiny',
+      model: 'mistral-small-latest',
       messages: [
         {
           role: 'system',
-          content: 'Generate a short, concise title (max 50 characters) for this conversation. Return only the title, no quotes or extra text.',
+          content: 'Generate a short, concise title (max 50 characters) for this conversation. Return only the title text with no formatting, no quotes, no markdown, no bold, no asterisks, no extra text.',
         },
         { role: 'user', content: firstMessage },
       ],
@@ -164,7 +164,10 @@ export async function generateTitle(
   });
 
   const data = await response.json();
-  return data.choices[0]?.message?.content?.trim() || 'New Chat';
+  let title = data.choices[0]?.message?.content?.trim() || 'New Chat';
+  // Strip any markdown formatting that might slip through
+  title = title.replace(/\*\*/g, '').replace(/^["']|["']$/g, '').replace(/^#+\s*/, '').trim();
+  return title || 'New Chat';
 }
 
 export async function getAvailableModels(apiKey: string): Promise<string[]> {

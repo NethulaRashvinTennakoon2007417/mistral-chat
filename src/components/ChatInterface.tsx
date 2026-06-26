@@ -8,6 +8,7 @@ import { ModelSelector } from '@/components/ModelSelector';
 import { streamChatCompletion, generateTitle } from '@/lib/mistral';
 import { Message as MessageType, Attachment, MistralModel } from '@/types';
 import { Menu, Share2, Check, AlertCircle, X, Plus } from 'lucide-react';
+import { stripMarkdown } from '@/lib/utils';
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -256,7 +257,7 @@ export function ChatInterface() {
   const hasMessages = currentChat && currentChat.messages.length > 0;
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--background)] h-screen relative">
+    <div className="flex-1 flex flex-col bg-[var(--background)] relative overflow-hidden">
       {/* Header - only show when there are messages */}
       {hasMessages && (
         <header className="flex items-center justify-between px-3 h-12 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm sticky top-0 z-40 animate-slide-down">
@@ -269,7 +270,7 @@ export function ChatInterface() {
               <Menu size={18} />
             </button>
             <span className="text-sm font-medium text-[var(--foreground)] line-clamp-1">
-              {currentChat?.title || 'New Chat'}
+              {stripMarkdown(currentChat?.title || 'New Chat')}
             </span>
           </div>
           <div className="flex items-center gap-1">

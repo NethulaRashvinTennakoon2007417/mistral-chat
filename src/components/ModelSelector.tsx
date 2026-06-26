@@ -36,8 +36,8 @@ export function ModelSelector({ selectedModel, onSelect }: ModelSelectorProps) {
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 w-72 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-50 overflow-hidden modal-panel">
+          <div className="fixed inset-0 z-[60]" onClick={() => setIsOpen(false)} />
+          <div className="absolute right-0 top-full mt-1 w-72 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-[70] overflow-hidden modal-panel">
             <div className="p-2 border-b border-[var(--border)]">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-2 py-1">
                 Select Model

@@ -14,7 +14,9 @@ function AppContent() {
     return (
       <div className="flex h-screen bg-[var(--background)]">
         <Sidebar />
-        <ChatInterface />
+        <div className={`flex-1 flex flex-col transition-all duration-300 ease-out ${sidebarOpen ? 'ml-72' : 'ml-0'}`}>
+          <ChatInterface />
+        </div>
         <SettingsPanel />
       </div>
     );

@@ -28,3 +28,15 @@ export function truncate(str: string, length: number): string {
 export function generateId(): string {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
+
+export function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*/g, '')
+    .replace(/\*/g, '')
+    .replace(/^["']|["']$/g, '')
+    .replace(/^#+\s*/gm, '')
+    .replace(/__|_/g, '')
+    .replace(/~~|~/g, '')
+    .replace(/`/g, '')
+    .trim();
+}
