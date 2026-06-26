@@ -44,7 +44,12 @@ export function Sidebar() {
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    removeChat(id);
+    const isCurrent = currentChat?.id === id;
+    const currentIndex = chats.findIndex((c) => c.id === id);
+    const nextChat = isCurrent && chats.length > 1
+      ? (chats[currentIndex + 1] || chats[currentIndex - 1])
+      : undefined;
+    removeChat(id, nextChat);
   };
 
   const handleRenameStart = (e: React.MouseEvent, chat: { id: string; title: string }) => {

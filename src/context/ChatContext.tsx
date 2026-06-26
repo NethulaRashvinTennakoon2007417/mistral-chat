@@ -15,7 +15,7 @@ interface ChatContextType {
   createNewChat: (model?: MistralModel) => Chat;
   setCurrentChat: (chat: Chat | null) => void;
   updateChat: (chat: Chat | ((prev: Chat | null) => Chat | null)) => void;
-  removeChat: (id: string) => void;
+  removeChat: (id: string, replaceWith?: Chat | null) => void;
   addMessage: (chatId: string, message: Omit<Message, 'id' | 'timestamp'>) => void;
   updateMessage: (chatId: string, messageId: string, content: string) => void;
   setIsGenerating: (value: boolean) => void;
@@ -120,15 +120,20 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const removeChat = useCallback((id: string) => {
+  const removeChat = useCallback((id: string, replaceWith?: Chat | null) => {
     setChats((prev) => {
       const updated = prev.filter((c) => c.id !== id);
       deleteChat(id);
       return updated;
     });
     if (currentChatRef.current?.id === id) {
-      setCurrentChatState(null);
-      currentChatRef.current = null;
+      if (replaceWith) {
+        setCurrentChatState(replaceWith);
+        currentChatRef.current = replaceWith;
+      } else {
+        setCurrentChatState(null);
+        currentChatRef.current = null;
+      }
     }
   }, []);
 
