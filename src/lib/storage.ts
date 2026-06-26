@@ -1,7 +1,33 @@
-import { Chat, Settings } from '@/types';
+import { Chat, Settings, MistralModel } from '@/types';
 
 const CHATS_KEY = 'mistral-chats';
 const SETTINGS_KEY = 'mistral-settings';
+
+const VALID_MODELS: Set<string> = new Set([
+  'mistral-small-latest',
+  'mistral-medium-latest',
+  'mistral-large-latest',
+  'open-mixtral-8x7b',
+  'open-mixtral-8x22b',
+  'open-mistral-nemo',
+  'codestral-latest',
+  'pixtral-large-latest',
+]);
+
+function sanitizeModel(model: string): MistralModel {
+  if (VALID_MODELS.has(model)) return model as MistralModel;
+  // Map old model IDs to new ones
+  const migration: Record<string, MistralModel> = {
+    'mistral-tiny': 'mistral-small-latest',
+    'mistral-small': 'mistral-small-latest',
+    'mistral-medium': 'mistral-medium-latest',
+    'mistral-large': 'mistral-large-latest',
+    'open-mistral-7b': 'open-mistral-nemo',
+    'codestral': 'codestral-latest',
+    'codestral-2405': 'codestral-latest',
+  };
+  return migration[model] || 'mistral-small-latest';
+}
 
 export function getChats(): Chat[] {
   if (typeof window === 'undefined') return [];
@@ -11,6 +37,7 @@ export function getChats(): Chat[] {
     const chats = JSON.parse(data);
     return chats.map((chat: Chat) => ({
       ...chat,
+      model: sanitizeModel(chat.model),
       createdAt: new Date(chat.createdAt),
       updatedAt: new Date(chat.updatedAt),
       messages: chat.messages.map((msg) => ({
@@ -50,35 +77,27 @@ export function deleteChat(id: string): void {
 }
 
 export function getSettings(): Settings {
-  if (typeof window === 'undefined') {
-    return {
-      apiKey: '',
-      defaultModel: 'mistral-small-latest',
-      temperature: 0.7,
-      maxTokens: 4096,
-      systemPrompt: '',
-    };
-  }
+  const defaults: Settings = {
+    apiKey: '',
+    defaultModel: 'mistral-small-latest',
+    temperature: 0.7,
+    maxTokens: 4096,
+    systemPrompt: '',
+  };
+
+  if (typeof window === 'undefined') return defaults;
+
   try {
     const data = localStorage.getItem(SETTINGS_KEY);
-    if (!data) {
-      return {
-        apiKey: '',
-        defaultModel: 'mistral-small-latest',
-        temperature: 0.7,
-        maxTokens: 4096,
-        systemPrompt: '',
-      };
-    }
-    return JSON.parse(data);
-  } catch {
+    if (!data) return defaults;
+    const parsed = JSON.parse(data);
     return {
-      apiKey: '',
-      defaultModel: 'mistral-small-latest',
-      temperature: 0.7,
-      maxTokens: 4096,
-      systemPrompt: '',
+      ...defaults,
+      ...parsed,
+      defaultModel: sanitizeModel(parsed.defaultModel),
     };
+  } catch {
+    return defaults;
   }
 }
 
