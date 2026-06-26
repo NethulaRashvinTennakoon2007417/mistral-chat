@@ -34,12 +34,15 @@ export function ChatInterface() {
     updateChat,
     setIsGenerating,
     createNewChat,
+    toggleSettings,
   } = useChat();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const streamingChatRef = useRef<string | null>(null);
   const [copiedShare, setCopiedShare] = useState(false);
   const [showBanner, setShowBanner] = useState(true);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -49,9 +52,21 @@ export function ChatInterface() {
     scrollToBottom();
   }, [currentChat?.messages, scrollToBottom]);
 
+  // Keyboard shortcut: Cmd/Ctrl+B to toggle sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [toggleSidebar]);
+
   const handleSend = async (content: string, attachments?: Attachment[]) => {
     if (!settings.apiKey) {
-      alert('Please set your API key in settings first.');
+      toggleSettings();
       return;
     }
 
@@ -60,15 +75,20 @@ export function ChatInterface() {
       chat = createNewChat();
     }
 
+    // Prevent double-sending while streaming
+    if (isGenerating && streamingChatRef.current === chat.id) return;
+
+    const userMsgId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const assistantMsgId = Math.random().toString(36).substring(2) + Date.now().toString(36) + '-assistant';
+
     const userMsg: MessageType = {
-      id: Math.random().toString(36).substring(2) + Date.now().toString(36),
+      id: userMsgId,
       role: 'user',
       content,
       attachments,
       timestamp: new Date(),
     };
 
-    const assistantMsgId = Math.random().toString(36).substring(2) + Date.now().toString(36) + '-assistant';
     const assistantMsg: MessageType = {
       id: assistantMsgId,
       role: 'assistant',
@@ -76,19 +96,23 @@ export function ChatInterface() {
       timestamp: new Date(),
     };
 
+    // Add both messages to chat
     const messagesWithBoth = [...chat.messages, userMsg, assistantMsg];
-    updateChat({ ...chat, messages: messagesWithBoth, updatedAt: new Date() });
+    const updatedChat = { ...chat, messages: messagesWithBoth, updatedAt: new Date() };
+    updateChat(updatedChat);
 
+    // Generate title for first message
     if (chat.messages.length === 0) {
-      try {
-        const title = await generateTitle(settings.apiKey, content, chat.model);
-        updateChat({ ...chat, title, messages: messagesWithBoth, updatedAt: new Date() });
-      } catch (error) {
-        console.error('Failed to generate title:', error);
-      }
+      generateTitle(settings.apiKey, content, chat.model)
+        .then((title) => {
+          updateChat({ ...updatedChat, title });
+        })
+        .catch(() => {});
     }
 
     setIsGenerating(true);
+    setStreamingMessageId(assistantMsgId);
+    streamingChatRef.current = chat.id;
     abortControllerRef.current = new AbortController();
 
     try {
@@ -103,24 +127,41 @@ export function ChatInterface() {
         settings.maxTokens,
         settings.systemPrompt || undefined
       )) {
+        // Check if aborted
+        if (abortControllerRef.current?.signal.aborted) break;
+
         responseContent += chunk;
-        const updatedMessages = messagesWithBoth.map((msg) =>
-          msg.id === assistantMsgId ? { ...msg, content: responseContent } : msg
-        );
-        updateChat({ ...chat, messages: updatedMessages, updatedAt: new Date() });
+
+        // Use functional update to avoid stale closure
+        updateChat((prev) => {
+          if (!prev) return prev;
+          const updatedMessages = prev.messages.map((msg) =>
+            msg.id === assistantMsgId ? { ...msg, content: responseContent } : msg
+          );
+          return { ...prev, messages: updatedMessages, updatedAt: new Date() };
+        });
       }
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
         console.log('Generation aborted');
       } else {
         console.error('Generation failed:', error);
-        addMessage(chat.id, {
+        // Add error message
+        const errorMsg: MessageType = {
+          id: Math.random().toString(36).substring(2) + Date.now().toString(36) + '-error',
           role: 'assistant',
-          content: `Error: ${error instanceof Error ? error.message : 'Failed to generate response'}`,
+          content: `Sorry, something went wrong. ${error instanceof Error ? error.message : 'Please try again.'}`,
+          timestamp: new Date(),
+        };
+        updateChat((prev) => {
+          if (!prev) return prev;
+          return { ...prev, messages: [...prev.messages.slice(0, -1), errorMsg], updatedAt: new Date() };
         });
       }
     } finally {
       setIsGenerating(false);
+      setStreamingMessageId(null);
+      streamingChatRef.current = null;
       abortControllerRef.current = null;
     }
   };
@@ -128,24 +169,66 @@ export function ChatInterface() {
   const handleStop = () => {
     abortControllerRef.current?.abort();
     setIsGenerating(false);
+    setStreamingMessageId(null);
+    streamingChatRef.current = null;
   };
 
   const handleRetry = () => {
     if (!currentChat || currentChat.messages.length < 2) return;
-    const messages = currentChat.messages.slice(0, -1);
-    const lastUserMessage = messages[messages.length - 1];
-    if (lastUserMessage?.role === 'user') {
-      updateChat({ ...currentChat, messages: messages.slice(0, -1) });
-      handleSend(lastUserMessage.content, lastUserMessage.attachments);
+
+    // Find the last user message
+    const lastMsg = currentChat.messages[currentChat.messages.length - 1];
+    const secondLastMsg = currentChat.messages[currentChat.messages.length - 2];
+
+    let lastUserMessage: MessageType | undefined;
+
+    if (lastMsg.role === 'user') {
+      lastUserMessage = lastMsg;
+      // Remove the last user message
+      updateChat({
+        ...currentChat,
+        messages: currentChat.messages.slice(0, -1),
+      });
+    } else if (secondLastMsg?.role === 'user') {
+      lastUserMessage = secondLastMsg;
+      // Remove last assistant + last user message
+      updateChat({
+        ...currentChat,
+        messages: currentChat.messages.slice(0, -2),
+      });
+    }
+
+    if (lastUserMessage) {
+      // Small delay to let state update, then resend
+      setTimeout(() => {
+        handleSend(lastUserMessage!.content, lastUserMessage!.attachments);
+      }, 50);
     }
   };
 
   const handleEditMessage = (messageId: string, content: string) => {
     if (!currentChat) return;
-    const updatedMessages = currentChat.messages.map((msg) =>
-      msg.id === messageId ? { ...msg, content } : msg
+
+    // Find the message and the one after it (should be assistant response)
+    const msgIndex = currentChat.messages.findIndex((m) => m.id === messageId);
+    if (msgIndex === -1) return;
+
+    const updatedMessages = currentChat.messages.map((msg, i) =>
+      i === msgIndex ? { ...msg, content } : msg
     );
-    updateChat({ ...currentChat, messages: updatedMessages });
+
+    // If editing a user message, also remove the assistant response after it
+    if (currentChat.messages[msgIndex]?.role === 'user' && msgIndex + 1 < currentChat.messages.length) {
+      const newMessages = updatedMessages.slice(0, msgIndex + 1);
+      updateChat({ ...currentChat, messages: newMessages });
+
+      // Resend with edited content
+      setTimeout(() => {
+        handleSend(content, currentChat.messages[msgIndex].attachments);
+      }, 50);
+    } else {
+      updateChat({ ...currentChat, messages: updatedMessages });
+    }
   };
 
   const handleShare = async () => {
@@ -154,7 +237,16 @@ export function ChatInterface() {
       title: currentChat.title,
       messages: currentChat.messages.map((m) => ({ role: m.role, content: m.content })),
     };
-    await navigator.clipboard.writeText(JSON.stringify(shareData, null, 2));
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(shareData, null, 2));
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = JSON.stringify(shareData, null, 2);
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
     setCopiedShare(true);
     setTimeout(() => setCopiedShare(false), 2000);
   };
@@ -164,17 +256,22 @@ export function ChatInterface() {
     updateChat({ ...currentChat, model });
   };
 
+  const handlePromptCategory = (prompt: string) => {
+    handleSend(prompt);
+  };
+
   const hasMessages = currentChat && currentChat.messages.length > 0;
 
   return (
     <div className="flex-1 flex flex-col bg-[var(--background)] h-screen relative">
       {/* Header - only show when there are messages */}
       {hasMessages && (
-        <header className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)] bg-[var(--background)] sticky top-0 z-40">
+        <header className="flex items-center justify-between px-3 py-2 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm sticky top-0 z-40">
           <div className="flex items-center gap-2">
             <button
               onClick={toggleSidebar}
               className="p-1.5 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+              title="Toggle sidebar (Ctrl+B)"
             >
               <Menu size={18} />
             </button>
@@ -195,13 +292,14 @@ export function ChatInterface() {
         </header>
       )}
 
-      {/* No sidebar header when sidebar is hidden */}
+      {/* Empty state header - just sidebar toggle */}
       {!hasMessages && (
         <header className="flex items-center justify-between px-3 py-2 bg-[var(--background)] sticky top-0 z-40">
           <div className="flex items-center gap-2">
             <button
               onClick={toggleSidebar}
               className="p-1.5 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+              title="Toggle sidebar (Ctrl+B)"
             >
               <Menu size={18} />
             </button>
@@ -219,10 +317,7 @@ export function ChatInterface() {
             <AlertCircle size={16} />
             <span>Set your API key in Settings to start chatting</span>
             <button
-              onClick={() => {
-                const { toggleSettings } = useChat();
-                toggleSettings();
-              }}
+              onClick={toggleSettings}
               className="underline font-medium hover:no-underline"
             >
               Open Settings
@@ -244,7 +339,8 @@ export function ChatInterface() {
                   key={message.id}
                   message={message}
                   isLatest={index === currentChat.messages.length - 1 && message.role === 'assistant'}
-                  onRetry={message.role === 'assistant' ? handleRetry : undefined}
+                  isStreaming={streamingMessageId === message.id}
+                  onRetry={message.role === 'assistant' && index === currentChat.messages.length - 1 ? handleRetry : undefined}
                   onEdit={
                     message.role === 'user'
                       ? (content) => handleEditMessage(message.id, content)
@@ -281,8 +377,9 @@ export function ChatInterface() {
                   {PROMPT_CATEGORIES.map((cat) => (
                     <button
                       key={cat.label}
-                      onClick={() => handleSend(cat.prompt)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--border)] text-sm text-[var(--foreground)] hover:bg-[var(--muted)] hover:border-[var(--primary)] transition-all"
+                      onClick={() => handlePromptCategory(cat.prompt)}
+                      disabled={isGenerating || !settings.apiKey}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--border)] text-sm text-[var(--foreground)] hover:bg-[var(--muted)] hover:border-[var(--primary)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span>{cat.icon}</span>
                       <span>{cat.label}</span>

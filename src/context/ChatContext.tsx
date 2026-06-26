@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { Chat, Message, MistralModel, Settings } from '@/types';
 import { getChats, saveChat, deleteChat, getSettings, saveSettings } from '@/lib/storage';
 import { generateId } from '@/lib/utils';
@@ -14,7 +14,7 @@ interface ChatContextType {
   settingsOpen: boolean;
   createNewChat: (model?: MistralModel) => Chat;
   setCurrentChat: (chat: Chat | null) => void;
-  updateChat: (chat: Chat) => void;
+  updateChat: (chat: Chat | ((prev: Chat | null) => Chat | null)) => void;
   removeChat: (id: string) => void;
   addMessage: (chatId: string, message: Omit<Message, 'id' | 'timestamp'>) => void;
   updateMessage: (chatId: string, messageId: string, content: string) => void;
@@ -28,7 +28,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [chats, setChats] = useState<Chat[]>([]);
-  const [currentChat, setCurrentChat] = useState<Chat | null>(null);
+  const [currentChat, setCurrentChatState] = useState<Chat | null>(null);
   const [settings, setSettings] = useState<Settings>({
     apiKey: '',
     defaultModel: 'mistral-small',
@@ -40,9 +40,22 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // Use refs for values needed in callbacks to avoid stale closures
+  const currentChatRef = useRef<Chat | null>(null);
+
   useEffect(() => {
     setChats(getChats());
     setSettings(getSettings());
+  }, []);
+
+  // Keep ref in sync
+  useEffect(() => {
+    currentChatRef.current = currentChat;
+  }, [currentChat]);
+
+  const setCurrentChat = useCallback((chat: Chat | null) => {
+    setCurrentChatState(chat);
+    currentChatRef.current = chat;
   }, []);
 
   const createNewChat = useCallback((model?: MistralModel): Chat => {
@@ -59,21 +72,53 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       saveChat(newChat);
       return updated;
     });
-    setCurrentChat(newChat);
+    setCurrentChatState(newChat);
+    currentChatRef.current = newChat;
     return newChat;
   }, [settings.defaultModel]);
 
-  const updateChat = useCallback((chat: Chat) => {
-    const updatedChat = { ...chat, updatedAt: new Date() };
-    setChats((prev) => {
-      const updated = prev.map((c) => (c.id === chat.id ? updatedChat : c));
-      saveChat(updatedChat);
-      return updated;
-    });
-    if (currentChat?.id === chat.id) {
-      setCurrentChat(updatedChat);
+  const updateChat = useCallback((chatOrUpdate: Chat | ((prev: Chat | null) => Chat | null)) => {
+    if (typeof chatOrUpdate === 'function') {
+      // Functional update
+      setCurrentChatState((prev) => {
+        const updated = chatOrUpdate(prev);
+        if (updated) {
+          saveChat(updated);
+          // Update chats list
+          setChats((prevChats) => {
+            const index = prevChats.findIndex((c) => c.id === updated.id);
+            if (index >= 0) {
+              const newChats = [...prevChats];
+              newChats[index] = updated;
+              return newChats;
+            }
+            return prevChats;
+          });
+        }
+        currentChatRef.current = updated;
+        return updated;
+      });
+    } else {
+      // Direct value update
+      const updatedChat = { ...chatOrUpdate, updatedAt: new Date() };
+      setChats((prev) => {
+        const index = prev.findIndex((c) => c.id === updatedChat.id);
+        const newChats = index >= 0
+          ? prev.map((c) => (c.id === updatedChat.id ? updatedChat : c))
+          : [updatedChat, ...prev];
+        saveChat(updatedChat);
+        return newChats;
+      });
+      setCurrentChatState((prev) => {
+        if (prev?.id === updatedChat.id) {
+          currentChatRef.current = updatedChat;
+          return updatedChat;
+        }
+        currentChatRef.current = prev;
+        return prev;
+      });
     }
-  }, [currentChat]);
+  }, []);
 
   const removeChat = useCallback((id: string) => {
     setChats((prev) => {
@@ -81,10 +126,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       deleteChat(id);
       return updated;
     });
-    if (currentChat?.id === id) {
-      setCurrentChat(null);
+    if (currentChatRef.current?.id === id) {
+      setCurrentChatState(null);
+      currentChatRef.current = null;
     }
-  }, [currentChat]);
+  }, []);
 
   const addMessage = useCallback((chatId: string, message: Omit<Message, 'id' | 'timestamp'>) => {
     const newMessage: Message = {
@@ -105,13 +151,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
       saveChat(updatedChat);
 
-      if (currentChat?.id === chatId) {
-        setCurrentChat(updatedChat);
+      if (currentChatRef.current?.id === chatId) {
+        setCurrentChatState(updatedChat);
+        currentChatRef.current = updatedChat;
       }
 
       return prev.map((c) => (c.id === chatId ? updatedChat : c));
     });
-  }, [currentChat]);
+  }, []);
 
   const updateMessage = useCallback((chatId: string, messageId: string, content: string) => {
     setChats((prev) => {
@@ -128,13 +175,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
       saveChat(updatedChat);
 
-      if (currentChat?.id === chatId) {
-        setCurrentChat(updatedChat);
+      if (currentChatRef.current?.id === chatId) {
+        setCurrentChatState(updatedChat);
+        currentChatRef.current = updatedChat;
       }
 
       return prev.map((c) => (c.id === chatId ? updatedChat : c));
     });
-  }, [currentChat]);
+  }, []);
 
   const updateSettings = useCallback((newSettings: Partial<Settings>) => {
     setSettings((prev) => {

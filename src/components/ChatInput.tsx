@@ -21,6 +21,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
+  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -29,11 +30,22 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
     }
   }, [content, variant]);
 
+  // Auto-focus on mount for centered variant
+  useEffect(() => {
+    if (variant === 'centered' && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [variant]);
+
   const handleSubmit = () => {
-    if ((!content.trim() && attachments.length === 0) || isGenerating) return;
-    onSend(content, attachments);
+    if ((!content.trim() && attachments.length === 0) || isGenerating || disabled) return;
+    onSend(content, attachments.length > 0 ? attachments : undefined);
     setContent('');
     setAttachments([]);
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -56,7 +68,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
         size: file.size,
       };
 
-      if (file.type.startsWith('text/') || file.name.endsWith('.json') || file.name.endsWith('.md')) {
+      if (file.type.startsWith('text/') || file.name.endsWith('.json') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
         const text = await file.text();
         attachment.content = text;
       }
@@ -100,6 +112,8 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
     }
   };
 
+  const hasContent = content.trim().length > 0 || attachments.length > 0;
+
   if (variant === 'centered') {
     return (
       <div className="relative">
@@ -109,7 +123,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
             {attachments.map((attachment) => (
               <div
                 key={attachment.id}
-                className="flex items-center gap-2 px-3 py-1.5 bg-[var(--muted)] rounded-lg text-xs border border-[var(--border)]"
+                className="flex items-center gap-2 px-3 py-1.5 bg-[var(--muted)] rounded-lg text-xs border border-[var(--border)] group"
               >
                 {attachment.type.startsWith('image/') ? (
                   <Image size={12} className="text-[var(--muted-foreground)]" />
@@ -119,7 +133,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
                 <span className="max-w-[120px] truncate text-[var(--foreground)]">{attachment.name}</span>
                 <button
                   onClick={() => removeAttachment(attachment.id)}
-                  className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors"
+                  className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors opacity-0 group-hover:opacity-100"
                 >
                   &times;
                 </button>
@@ -191,7 +205,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
               ) : (
                 <button
                   onClick={handleSubmit}
-                  disabled={(!content.trim() && attachments.length === 0) || disabled}
+                  disabled={!hasContent || disabled}
                   className="p-2 rounded-lg bg-[var(--foreground)] text-[var(--background)] disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
                   title="Send message"
                 >
@@ -219,7 +233,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
           {attachments.map((attachment) => (
             <div
               key={attachment.id}
-              className="flex items-center gap-2 px-3 py-1.5 bg-[var(--muted)] rounded-lg text-xs border border-[var(--border)]"
+              className="flex items-center gap-2 px-3 py-1.5 bg-[var(--muted)] rounded-lg text-xs border border-[var(--border)] group"
             >
               {attachment.type.startsWith('image/') ? (
                 <Image size={12} className="text-[var(--muted-foreground)]" />
@@ -229,7 +243,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
               <span className="max-w-[120px] truncate text-[var(--foreground)]">{attachment.name}</span>
               <button
                 onClick={() => removeAttachment(attachment.id)}
-                className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors"
+                className="text-[var(--muted-foreground)] hover:text-[var(--destructive)] transition-colors opacity-0 group-hover:opacity-100"
               >
                 &times;
               </button>
@@ -296,7 +310,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
         ) : (
           <button
             onClick={handleSubmit}
-            disabled={(!content.trim() && attachments.length === 0) || disabled}
+            disabled={!hasContent || disabled}
             className="p-3 bg-[var(--foreground)] text-[var(--background)] rounded-xl m-1 disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
             title="Send message"
           >

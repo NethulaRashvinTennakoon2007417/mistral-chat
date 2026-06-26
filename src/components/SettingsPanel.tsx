@@ -1,13 +1,45 @@
 'use client';
 
 import { useChat } from '@/context/ChatContext';
-import { X, Save, ExternalLink } from 'lucide-react';
-import { useState } from 'react';
+import { X, Save, ExternalLink, Eye, EyeOff } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { MistralModel, MISTRAL_MODELS } from '@/types';
 
 export function SettingsPanel() {
   const { settings, updateSettings, settingsOpen, toggleSettings } = useChat();
   const [localSettings, setLocalSettings] = useState(settings);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Sync local settings when panel opens
+  useEffect(() => {
+    if (settingsOpen) {
+      setLocalSettings(settings);
+      setShowApiKey(false);
+    }
+  }, [settingsOpen, settings]);
+
+  // Escape key to close
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') toggleSettings();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [settingsOpen, toggleSettings]);
+
+  // Click outside to close
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        toggleSettings();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [settingsOpen, toggleSettings]);
 
   if (!settingsOpen) return null;
 
@@ -18,7 +50,7 @@ export function SettingsPanel() {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
+      <div ref={panelRef} className="w-full max-w-lg bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
           <div>
@@ -34,19 +66,28 @@ export function SettingsPanel() {
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
           {/* API Key */}
           <div>
             <label className="block text-sm font-semibold text-[var(--foreground)] mb-2">
               API Key
             </label>
-            <input
-              type="password"
-              value={localSettings.apiKey}
-              onChange={(e) => setLocalSettings((prev) => ({ ...prev, apiKey: e.target.value }))}
-              placeholder="Enter your Mistral API key"
-              className="input"
-            />
+            <div className="relative">
+              <input
+                type={showApiKey ? 'text' : 'password'}
+                value={localSettings.apiKey}
+                onChange={(e) => setLocalSettings((prev) => ({ ...prev, apiKey: e.target.value }))}
+                placeholder="Enter your Mistral API key"
+                className="input pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowApiKey(!showApiKey)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+              >
+                {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
             <p className="mt-1.5 text-xs text-[var(--muted-foreground)] flex items-center gap-1">
               Get your free key from{' '}
               <a

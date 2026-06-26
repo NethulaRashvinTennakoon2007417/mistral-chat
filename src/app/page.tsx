@@ -7,7 +7,7 @@ import { SettingsPanel } from '@/components/SettingsPanel';
 import { MessageSquare, Zap, Shield, Globe, ChevronRight, Sparkles } from 'lucide-react';
 
 function AppContent() {
-  const { currentChat, sidebarOpen } = useChat();
+  const { currentChat, sidebarOpen, createNewChat } = useChat();
 
   // Show chat interface if there's a current chat
   if (currentChat) {
@@ -32,7 +32,7 @@ function AppContent() {
         <header className="border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm sticky top-0 z-40">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
                 <Sparkles size={18} className="text-white" />
               </div>
               <span className="text-lg font-bold text-[var(--foreground)]">Mistral Chat</span>
@@ -56,8 +56,8 @@ function AppContent() {
               Nothing is stored on servers.
             </p>
             <button
-              onClick={() => {}}
-              className="btn btn-primary text-base px-8 py-3 rounded-xl shadow-lg shadow-blue-500/25"
+              onClick={() => createNewChat()}
+              className="btn btn-primary text-base px-8 py-3 rounded-xl shadow-lg shadow-orange-500/25"
             >
               <MessageSquare size={18} />
               Start chatting
@@ -73,7 +73,7 @@ function AppContent() {
               </div>
               <h3 className="text-lg font-semibold text-[var(--foreground)] mb-2">Lightning Fast</h3>
               <p className="text-sm text-[var(--muted-foreground)]">
-                Streaming responses in real-time. See answers as they're generated, word by word.
+                Streaming responses in real-time. See answers as they&apos;re generated, word by word.
               </p>
             </div>
             <div className="card p-6">
@@ -149,7 +149,7 @@ function AppContent() {
           </div>
 
           {/* CTA Section */}
-          <div className="text-center card p-12 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-100 dark:border-blue-800/30">
+          <div className="text-center card p-12 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-orange-100 dark:border-orange-800/30">
             <h2 className="text-2xl font-bold text-[var(--foreground)] mb-3">
               Ready to start chatting?
             </h2>
