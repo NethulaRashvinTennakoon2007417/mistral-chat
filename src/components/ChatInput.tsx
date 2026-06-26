@@ -88,7 +88,11 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
       }
 
       if (file.type.startsWith('image/')) {
-        attachment.url = URL.createObjectURL(file);
+        attachment.url = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
       }
 
       newAttachments.push(attachment);
