@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { MistralModel, MISTRAL_MODELS } from '@/types';
-import { ChevronDown, Check, Zap, Brain, Code } from 'lucide-react';
+import { ChevronDown, Check, Zap, Brain, Code, Eye } from 'lucide-react';
 
 interface ModelSelectorProps {
   selectedModel: MistralModel;
@@ -63,7 +63,15 @@ export function ModelSelector({ selectedModel, onSelect }: ModelSelectorProps) {
                     {MODEL_ICONS[id]}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium">{model.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium">{model.name}</p>
+                      {model.supportsVision && (
+                        <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                          <Eye size={9} />
+                          Vision
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-[var(--muted-foreground)] truncate">{model.description}</p>
                   </div>
                   {selectedModel === id && (

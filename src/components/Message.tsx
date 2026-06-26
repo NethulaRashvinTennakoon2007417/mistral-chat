@@ -1,7 +1,7 @@
 'use client';
 
 import { Message as MessageType } from '@/types';
-import { Copy, Check, RotateCcw, Edit2, ThumbsUp, ThumbsDown, Volume2, VolumeX, Sparkles } from 'lucide-react';
+import { Copy, Check, RotateCcw, Edit2, ThumbsUp, ThumbsDown, Volume2, VolumeX, Sparkles, FileText, Image as ImageIcon } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -124,7 +124,33 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
                 </div>
               </div>
             ) : (
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+              <div>
+                {/* Image Attachments */}
+                {message.attachments && message.attachments.filter(a => a.url && a.type.startsWith('image/')).length > 0 && (
+                  <div className="flex gap-2 flex-wrap mb-2">
+                    {message.attachments.filter(a => a.url && a.type.startsWith('image/')).map(att => (
+                      <img
+                        key={att.id}
+                        src={att.url}
+                        alt={att.name}
+                        className="max-w-[200px] max-h-[150px] rounded-lg border border-white/20 object-cover"
+                      />
+                    ))}
+                  </div>
+                )}
+                {/* File Badges */}
+                {message.attachments && message.attachments.filter(a => !a.type.startsWith('image/')).length > 0 && (
+                  <div className="flex gap-1.5 flex-wrap mb-2">
+                    {message.attachments.filter(a => !a.type.startsWith('image/')).map(att => (
+                      <div key={att.id} className="flex items-center gap-1.5 px-2 py-1 bg-white/10 rounded-md text-xs">
+                        {att.type === 'application/pdf' ? <FileText size={10} /> : <FileText size={10} />}
+                        <span className="truncate max-w-[100px]">{att.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+              </div>
             )}
           </div>
           {!editing && (

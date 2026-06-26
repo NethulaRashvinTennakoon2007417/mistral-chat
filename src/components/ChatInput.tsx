@@ -67,7 +67,27 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
         size: file.size,
       };
 
-      if (file.type.startsWith('text/') || file.name.endsWith('.json') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
+      if (file.type === 'application/pdf') {
+        // Extract PDF text client-side
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdfjsLib = await import('pdfjs-dist');
+          pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          const textParts: string[] = [];
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const pageText = (content.items as any[]).filter((item: any) => item.str).map((item: any) => item.str).join(' ');
+            textParts.push(pageText);
+          }
+          attachment.extractedText = textParts.join('\n\n');
+        } catch (err) {
+          console.error('PDF extraction failed:', err);
+          attachment.extractedText = '[Could not extract text from PDF]';
+        }
+      } else if (file.type.startsWith('text/') || file.name.endsWith('.json') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
         const text = await file.text();
         attachment.content = text;
       }

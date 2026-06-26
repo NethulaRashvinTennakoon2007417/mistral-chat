@@ -13,6 +13,7 @@ export interface Attachment {
   size: number;
   url?: string;
   content?: string;
+  extractedText?: string;
 }
 
 export interface Chat {
@@ -36,11 +37,11 @@ export type MistralModel =
   | 'codestral'
   | 'codestral-2405';
 
-export const MISTRAL_MODELS: Record<MistralModel, { name: string; description: string; contextWindow: number }> = {
+export const MISTRAL_MODELS: Record<MistralModel, { name: string; description: string; contextWindow: number; supportsVision?: boolean }> = {
   'mistral-tiny': { name: 'Mistral Tiny', description: 'Fastest, most cost-effective', contextWindow: 32000 },
   'mistral-small': { name: 'Mistral Small', description: 'Balanced performance', contextWindow: 32000 },
   'mistral-medium': { name: 'Mistral Medium', description: 'High quality responses', contextWindow: 32000 },
-  'mistral-large': { name: 'Mistral Large', description: 'Most capable model', contextWindow: 128000 },
+  'mistral-large': { name: 'Mistral Large', description: 'Most capable model', contextWindow: 128000, supportsVision: true },
   'open-mixtral-8x7b': { name: 'Mixtral 8x7B', description: 'Open source, fast', contextWindow: 32000 },
   'open-mixtral-8x22b': { name: 'Mixtral 8x22B', description: 'Open source, high quality', contextWindow: 65000 },
   'open-mistral-7b': { name: 'Mistral 7B', description: 'Open source, lightweight', contextWindow: 32000 },
@@ -55,4 +56,24 @@ export interface Settings {
   temperature: number;
   maxTokens: number;
   systemPrompt: string;
+}
+
+// Mistral API types
+export interface MistralContentText {
+  type: 'text';
+  text: string;
+}
+
+export interface MistralContentImage {
+  type: 'image_url';
+  image_url: {
+    url: string;
+  };
+}
+
+export type MistralContentPart = MistralContentText | MistralContentImage;
+
+export interface MistralMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string | MistralContentPart[];
 }

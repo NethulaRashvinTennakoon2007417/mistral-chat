@@ -1,30 +1,13 @@
-import { Message, MistralModel, Settings } from '@/types';
+import { Message, MistralModel, MistralMessage, MistralContentPart, Settings } from '@/types';
 
 const MISTRAL_API_URL = 'https://api.mistral.ai/v1';
 
 export interface ChatCompletionRequest {
   model: MistralModel;
-  messages: { role: string; content: string }[];
+  messages: MistralMessage[];
   temperature?: number;
   max_tokens?: number;
   stream?: boolean;
-}
-
-export interface ChatCompletionResponse {
-  id: string;
-  object: string;
-  created: number;
-  model: string;
-  choices: {
-    index: number;
-    message: { role: string; content: string };
-    finish_reason: string;
-  }[];
-  usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
 }
 
 export interface StreamChunk {
@@ -39,6 +22,49 @@ export interface StreamChunk {
   }[];
 }
 
+function buildMessageContent(msg: Message): string | MistralContentPart[] {
+  const hasAttachments = msg.attachments && msg.attachments.length > 0;
+  
+  if (!hasAttachments) {
+    return msg.content;
+  }
+
+  const parts: MistralContentPart[] = [];
+
+  // Add image attachments as image_url parts
+  const imageAttachments = msg.attachments!.filter(a => a.type.startsWith('image/') && a.url);
+  for (const img of imageAttachments) {
+    parts.push({
+      type: 'image_url',
+      image_url: { url: img.url! },
+    });
+  }
+
+  // Add text file / PDF extracted content
+  const textAttachments = msg.attachments!.filter(a => 
+    (a.type.startsWith('text/') || a.name.endsWith('.json') || a.name.endsWith('.md') || a.name.endsWith('.csv') || a.type === 'application/pdf') && 
+    (a.content || a.extractedText)
+  );
+  
+  for (const file of textAttachments) {
+    const fileContent = file.extractedText || file.content;
+    parts.push({
+      type: 'text',
+      text: `\n\n[File: ${file.name}]\n${fileContent}`,
+    });
+  }
+
+  // Add user message text
+  if (msg.content) {
+    parts.unshift({
+      type: 'text',
+      text: msg.content,
+    });
+  }
+
+  return parts.length > 0 ? parts : msg.content;
+}
+
 export async function* streamChatCompletion(
   apiKey: string,
   messages: Message[],
@@ -47,14 +73,17 @@ export async function* streamChatCompletion(
   maxTokens: number = 4096,
   systemPrompt?: string
 ): AsyncGenerator<string, void, unknown> {
-  const apiMessages: { role: string; content: string }[] = [];
+  const apiMessages: MistralMessage[] = [];
 
   if (systemPrompt) {
     apiMessages.push({ role: 'system', content: systemPrompt });
   }
 
   messages.forEach((msg) => {
-    apiMessages.push({ role: msg.role, content: msg.content });
+    apiMessages.push({
+      role: msg.role,
+      content: buildMessageContent(msg),
+    });
   });
 
   const response = await fetch(`${MISTRAL_API_URL}/chat/completions`, {
