@@ -25,11 +25,10 @@ function AppContent() {
   // Show homepage
   return (
     <div className="min-h-screen bg-[var(--background)]">
-      <Sidebar />
       <SettingsPanel />
 
       {/* Main Content */}
-      <div className={`${sidebarOpen ? 'ml-72' : 'ml-0'} transition-all duration-300 ease-out`}>
+      <div>
         {/* Header */}
         <header className="border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm sticky top-0 z-40 animate-slide-down">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
