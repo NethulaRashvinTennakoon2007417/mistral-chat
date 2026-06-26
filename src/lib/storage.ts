@@ -53,7 +53,7 @@ export function getSettings(): Settings {
   if (typeof window === 'undefined') {
     return {
       apiKey: '',
-      defaultModel: 'mistral-small',
+      defaultModel: 'mistral-small-latest',
       temperature: 0.7,
       maxTokens: 4096,
       systemPrompt: '',
@@ -64,7 +64,7 @@ export function getSettings(): Settings {
     if (!data) {
       return {
         apiKey: '',
-        defaultModel: 'mistral-small',
+        defaultModel: 'mistral-small-latest',
         temperature: 0.7,
         maxTokens: 4096,
         systemPrompt: '',
@@ -74,7 +74,7 @@ export function getSettings(): Settings {
   } catch {
     return {
       apiKey: '',
-      defaultModel: 'mistral-small',
+      defaultModel: 'mistral-small-latest',
       temperature: 0.7,
       maxTokens: 4096,
       systemPrompt: '',

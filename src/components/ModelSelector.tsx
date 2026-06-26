@@ -10,16 +10,14 @@ interface ModelSelectorProps {
 }
 
 const MODEL_ICONS: Record<string, React.ReactNode> = {
-  'mistral-tiny': <Zap size={14} className="text-green-500" />,
-  'mistral-small': <Zap size={14} className="text-blue-500" />,
-  'mistral-medium': <Brain size={14} className="text-purple-500" />,
-  'mistral-large': <Brain size={14} className="text-orange-500" />,
+  'mistral-small-latest': <Zap size={14} className="text-blue-500" />,
+  'mistral-medium-latest': <Brain size={14} className="text-purple-500" />,
+  'mistral-large-latest': <Brain size={14} className="text-orange-500" />,
   'open-mixtral-8x7b': <Zap size={14} className="text-cyan-500" />,
   'open-mixtral-8x22b': <Brain size={14} className="text-cyan-500" />,
-  'open-mistral-7b': <Zap size={14} className="text-teal-500" />,
   'open-mistral-nemo': <Brain size={14} className="text-teal-500" />,
-  'codestral': <Code size={14} className="text-pink-500" />,
-  'codestral-2405': <Code size={14} className="text-pink-500" />,
+  'codestral-latest': <Code size={14} className="text-pink-500" />,
+  'pixtral-large-latest': <Eye size={14} className="text-purple-500" />,
 };
 
 export function ModelSelector({ selectedModel, onSelect }: ModelSelectorProps) {

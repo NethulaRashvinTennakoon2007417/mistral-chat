@@ -293,7 +293,7 @@ export function ChatInterface() {
               <Plus size={14} />
               <span className="hidden sm:inline">New Chat</span>
             </button>
-            <ModelSelector selectedModel={currentChat?.model || 'mistral-small'} onSelect={handleModelChange} />
+            <ModelSelector selectedModel={currentChat?.model || 'mistral-small-latest'} onSelect={handleModelChange} />
             <button
               onClick={handleShare}
               className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
@@ -318,7 +318,7 @@ export function ChatInterface() {
             </button>
           </div>
           <div className="flex items-center gap-1">
-            <ModelSelector selectedModel={currentChat?.model || 'mistral-small'} onSelect={handleModelChange} />
+            <ModelSelector selectedModel={currentChat?.model || 'mistral-small-latest'} onSelect={handleModelChange} />
           </div>
         </header>
       )}
