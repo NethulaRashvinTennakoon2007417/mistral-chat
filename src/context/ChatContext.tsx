@@ -11,6 +11,7 @@ interface ChatContextType {
   settings: Settings;
   isGenerating: boolean;
   sidebarOpen: boolean;
+  sidebarCollapsed: boolean;
   settingsOpen: boolean;
   createNewChat: (model?: MistralModel) => Chat;
   setCurrentChat: (chat: Chat | null) => void;
@@ -21,6 +22,7 @@ interface ChatContextType {
   setIsGenerating: (value: boolean) => void;
   updateSettings: (settings: Partial<Settings>) => void;
   toggleSidebar: () => void;
+  toggleSidebarCollapse: () => void;
   toggleSettings: () => void;
 }
 
@@ -38,6 +40,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Use refs for values needed in callbacks to avoid stale closures
@@ -201,6 +204,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setSidebarOpen((prev) => !prev);
   }, []);
 
+  const toggleSidebarCollapse = useCallback(() => {
+    setSidebarCollapsed((prev) => !prev);
+  }, []);
+
   const toggleSettings = useCallback(() => {
     setSettingsOpen((prev) => !prev);
   }, []);
@@ -213,6 +220,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         settings,
         isGenerating,
         sidebarOpen,
+        sidebarCollapsed,
         settingsOpen,
         createNewChat,
         setCurrentChat,
@@ -223,6 +231,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         setIsGenerating,
         updateSettings,
         toggleSidebar,
+        toggleSidebarCollapse,
         toggleSettings,
       }}
     >
