@@ -123,7 +123,10 @@ export function ChatInterface() {
     if (chat.messages.length === 0) {
       generateTitle(settings.apiKey, content, chat.model)
         .then((title) => {
-          updateChat({ ...updatedChat, title });
+          updateChat((prev) => {
+            if (!prev) return prev;
+            return { ...prev, title, updatedAt: new Date() };
+          });
         })
         .catch(() => {});
     }
@@ -153,6 +156,22 @@ export function ChatInterface() {
           if (!prev) return prev;
           const updatedMessages = prev.messages.map((msg) =>
             msg.id === assistantMsgId ? { ...msg, content: responseContent } : msg
+          );
+          return { ...prev, messages: updatedMessages, updatedAt: new Date() };
+        });
+      }
+
+      if (!responseContent) {
+        const errorMsg: MessageType = {
+          id: assistantMsgId,
+          role: 'assistant',
+          content: 'No response received. The model may have returned an empty response. Please try again.',
+          timestamp: new Date(),
+        };
+        updateChat((prev) => {
+          if (!prev) return prev;
+          const updatedMessages = prev.messages.map((msg) =>
+            msg.id === assistantMsgId ? errorMsg : msg
           );
           return { ...prev, messages: updatedMessages, updatedAt: new Date() };
         });
