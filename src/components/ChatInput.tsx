@@ -90,7 +90,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
             const pageText = (content.items as any[]).filter((item: any) => item.str).map((item: any) => item.str).join(' ');
             textParts.push(pageText);
           }
-          attachment.extractedText = textParts.join('\n\n');
+          attachment.extractedText = textParts.join('\n\n').slice(0, 30000);
         } catch (err) {
           console.error('PDF extraction failed:', err);
           attachment.extractedText = '[Could not extract text from PDF]';

@@ -18,8 +18,22 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const [lastSaved, setLastSaved] = useState(new Date());
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
 
   const isPDF = fileData?.startsWith('data:application/pdf');
+
+  useEffect(() => {
+    if (isPDF && fileData) {
+      const base64 = fileData.split(',')[1];
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      setPdfBlobUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+  }, [isPDF, fileData]);
 
   useEffect(() => {
     setLastSaved(new Date());
@@ -236,9 +250,9 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
 
       {/* Content */}
       <div className="flex-1 overflow-hidden min-h-0">
-        {isPDF ? (
+        {isPDF && pdfBlobUrl ? (
           <iframe
-            src={fileData}
+            src={pdfBlobUrl}
             className="w-full h-full border-none"
             title={title}
           />
