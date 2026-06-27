@@ -31,22 +31,24 @@ function AppContent() {
 
       {/* Main Content */}
       <div>
-        {/* Header */}
-        <header className="border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm sticky top-0 z-40 animate-slide-down">
-          <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20 ring-1 ring-orange-400/20">
-                <Sparkles size={18} className="text-white" />
+        {/* Floating Glass Nav */}
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-slide-down">
+          <nav className="flex items-center gap-1 pl-2 pr-3 py-1.5 rounded-full liquid-glass">
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-full hover:bg-white/10 transition-all duration-200"
+            >
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-sm shadow-orange-500/20">
+                <Sparkles size={14} className="text-white" />
               </div>
-              <span className="text-lg font-bold text-[var(--foreground)]">Mistral Chat</span>
-            </div>
-            <nav className="flex items-center gap-6">
-              <a href="#about" onClick={(e) => { e.preventDefault(); document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all duration-200 cursor-pointer">About</a>
-              <a href="#models" onClick={(e) => { e.preventDefault(); document.getElementById('models')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all duration-200 cursor-pointer">Models</a>
-              <a href="https://console.mistral.ai/" target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-all duration-200">API Docs</a>
-            </nav>
-          </div>
-        </header>
+              <span className="text-sm font-semibold text-[var(--foreground)]">Mistral Chat</span>
+            </button>
+            <div className="w-px h-5 bg-[var(--border)] mx-1" />
+            <a href="#about" onClick={(e) => { e.preventDefault(); document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' }); }} className="px-3 py-1.5 rounded-full text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-white/10 transition-all duration-200 cursor-pointer">About</a>
+            <a href="#models" onClick={(e) => { e.preventDefault(); document.getElementById('models')?.scrollIntoView({ behavior: 'smooth' }); }} className="px-3 py-1.5 rounded-full text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-white/10 transition-all duration-200 cursor-pointer">Models</a>
+            <a href="https://console.mistral.ai/" target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-full text-sm text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-white/10 transition-all duration-200">API Docs</a>
+          </nav>
+        </div>
 
         {/* Hero Section */}
         <main className="max-w-5xl mx-auto px-6 py-16">
