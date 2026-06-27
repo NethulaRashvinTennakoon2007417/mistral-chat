@@ -180,20 +180,24 @@ export function Sidebar() {
     if (e.key === 'Escape') setEditingId(null);
   };
 
-  if (!sidebarOpen) return null;
-
-  const sidebarWidth = isCollapsed ? 'w-[60px]' : 'w-[260px]';
+  const sidebarWidth = isCollapsed ? 60 : 260;
 
   return (
     <>
       {/* Backdrop on mobile */}
-      <div
-        className="fixed inset-0 bg-black/20 z-40 lg:hidden backdrop-blur-sm"
-        onClick={toggleSidebar}
-      />
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 z-40 lg:hidden backdrop-blur-sm transition-opacity duration-300"
+          onClick={toggleSidebar}
+        />
+      )}
 
       <div
-        className={`h-full bg-[var(--background)] border-r border-[var(--border)] flex flex-col fixed left-0 top-0 z-50 transition-all duration-300 ease-out ${sidebarWidth}`}
+        className={`h-full bg-[var(--background)] border-r border-[var(--border)] flex flex-col fixed left-0 top-0 z-50 transition-[width,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]`}
+        style={{
+          width: sidebarWidth,
+          transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+        }}
       >
         {/* Header */}
         <div className={`flex items-center ${isCollapsed ? 'justify-center px-2 py-3' : 'justify-between px-4 py-3'} border-b border-[var(--border)]`}>
