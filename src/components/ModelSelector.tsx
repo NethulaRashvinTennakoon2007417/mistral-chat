@@ -23,8 +23,6 @@ const MODEL_ICONS: Record<string, React.ReactNode> = {
   'pixtral-large-latest': <Eye size={14} className="text-purple-500" />,
 };
 
-const DROPDOWN_HEIGHT = 420;
-
 export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -39,20 +37,15 @@ export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelS
       const rect = buttonRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
-      const openUpward = spaceBelow < DROPDOWN_HEIGHT && spaceAbove > spaceBelow;
-
-      let top: number;
-      if (openUpward) {
-        top = Math.max(8, rect.top - DROPDOWN_HEIGHT - 4);
-      } else {
-        top = Math.min(rect.bottom + 4, window.innerHeight - DROPDOWN_HEIGHT - 8);
-      }
+      const openUpward = spaceAbove > spaceBelow;
 
       setDropdownStyle({
         position: 'fixed',
         width: 320,
-        top,
         right: window.innerWidth - rect.right,
+        ...(openUpward
+          ? { bottom: window.innerHeight - rect.top + 4 }
+          : { top: rect.bottom + 4 }),
       });
     }
   }, [isOpen]);
