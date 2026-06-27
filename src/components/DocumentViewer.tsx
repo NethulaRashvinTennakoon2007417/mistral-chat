@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Download, Copy, Check, FileText, ChevronDown, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Download, Copy, Check, FileText, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface DocumentViewerProps {
   title: string;
@@ -16,12 +16,15 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
   const [pdfDoc, setPdfDoc] = useState<any>(null);
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [scale, setScale] = useState(1.2);
-  const [rendering, setRendering] = useState(false);
+  const [scale, setScale] = useState(1);
+  const [pageWidth, setPageWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const renderTaskRef = useRef<any>(null);
 
-  // Load PDF document
+  const hasPdf = !!fileData;
+
+  // Load PDF and measure container
   useEffect(() => {
     if (!fileData) return;
 
@@ -47,6 +50,11 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
         setPdfDoc(doc);
         setNumPages(doc.numPages);
         setCurrentPage(1);
+
+        // Get natural page width at scale 1
+        const page = await doc.getPage(1);
+        const viewport = page.getViewport({ scale: 1 });
+        setPageWidth(viewport.width);
       } catch (err) {
         console.error('Failed to load PDF:', err);
       }
@@ -55,30 +63,72 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
     loadPdf();
   }, [fileData]);
 
-  // Render current page
-  const renderPage = useCallback(async (pageNum: number) => {
-    if (!pdfDoc || !canvasRef.current || rendering) return;
+  // Calculate fit-to-container scale
+  const getFitScale = useCallback(() => {
+    if (!containerRef.current || !pageWidth) return 1;
+    const containerWidth = containerRef.current.clientWidth - 48;
+    return containerWidth / pageWidth;
+  }, [pageWidth]);
 
-    setRendering(true);
-    try {
-      const page = await pdfDoc.getPage(pageNum);
-      const viewport = page.getViewport({ scale });
+  // Render page
+  useEffect(() => {
+    if (!pdfDoc || !canvasRef.current || !pageWidth) return;
+
+    let cancelled = false;
+
+    const render = async () => {
+      // Cancel any ongoing render
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+        renderTaskRef.current = null;
+      }
+
+      const fitScale = getFitScale() * scale;
+      const page = await pdfDoc.getPage(currentPage);
+      if (cancelled) return;
+
+      const viewport = page.getViewport({ scale: fitScale });
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
+      if (!canvas) return;
 
       canvas.height = viewport.height;
       canvas.width = viewport.width;
 
-      await page.render({ canvasContext: ctx, viewport }).promise;
-    } catch (err) {
-      console.error('Failed to render page:', err);
-    }
-    setRendering(false);
-  }, [pdfDoc, scale, rendering]);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
+      const renderTask = page.render({ canvasContext: ctx, viewport });
+      renderTaskRef.current = renderTask;
+
+      try {
+        await renderTask.promise;
+      } catch (err: any) {
+        if (err?.name !== 'RenderingCancelledException') {
+          console.error('Render failed:', err);
+        }
+      }
+    };
+
+    render();
+
+    return () => {
+      cancelled = true;
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel();
+      }
+    };
+  }, [pdfDoc, currentPage, scale, pageWidth, getFitScale]);
+
+  // Re-render on window resize
   useEffect(() => {
-    renderPage(currentPage);
-  }, [currentPage, scale, renderPage]);
+    if (!containerRef.current || !pageWidth) return;
+
+    const observer = new ResizeObserver(() => {
+      setScale(s => s); // trigger re-render
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [pageWidth]);
 
   const handleCopy = async () => {
     const text = content || 'PDF content';
@@ -95,17 +145,14 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
     a.click();
   };
 
-  const zoomIn = () => setScale(s => Math.min(s + 0.2, 3));
-  const zoomOut = () => setScale(s => Math.max(s - 0.2, 0.5));
-  const prevPage = () => setCurrentPage(p => Math.max(1, p - 1));
-  const nextPage = () => setCurrentPage(p => Math.min(numPages, p + 1));
-
-  const hasPdf = !!fileData;
+  const zoomIn = () => setScale(s => Math.min(s + 0.15, 2.5));
+  const zoomOut = () => setScale(s => Math.max(s - 0.15, 0.4));
+  const fitWidth = () => setScale(1);
 
   return (
     <div className="flex flex-col h-full bg-[var(--background)] border-l border-[var(--border)] animate-slide-in-right">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--border)] bg-[var(--background)]">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--border)] bg-[var(--background)] flex-shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onClose}
@@ -125,19 +172,6 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
         </div>
 
         <div className="flex items-center gap-1 flex-shrink-0">
-          {hasPdf && (
-            <>
-              <button onClick={zoomOut} className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all" title="Zoom out">
-                <ZoomOut size={14} />
-              </button>
-              <span className="text-xs text-[var(--muted-foreground)] min-w-[40px] text-center">{Math.round(scale * 100)}%</span>
-              <button onClick={zoomIn} className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all" title="Zoom in">
-                <ZoomIn size={14} />
-              </button>
-              <div className="w-px h-5 bg-[var(--border)] mx-1" />
-            </>
-          )}
-
           <button
             onClick={handleCopy}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 text-xs"
@@ -158,43 +192,57 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
         </div>
       </div>
 
-      {/* PDF Renderer */}
+      {/* PDF Content */}
       {hasPdf ? (
         <>
-          {/* Page Navigation */}
-          {numPages > 0 && (
-            <div className="flex items-center justify-center gap-2 px-4 py-2 border-b border-[var(--border)] bg-[var(--background)]">
-              <button
-                onClick={prevPage}
-                disabled={currentPage <= 1}
-                className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all disabled:opacity-30"
-              >
-                <ChevronLeft size={14} />
+          {/* Toolbar: zoom + page nav */}
+          <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border)] bg-[var(--background)] flex-shrink-0">
+            <div className="flex items-center gap-1">
+              <button onClick={zoomOut} className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all" title="Zoom out">
+                <ZoomOut size={14} />
               </button>
-              <span className="text-xs text-[var(--muted-foreground)]">
-                Page {currentPage} of {numPages}
-              </span>
-              <button
-                onClick={nextPage}
-                disabled={currentPage >= numPages}
-                className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all disabled:opacity-30"
-              >
-                <ChevronRight size={14} />
+              <button onClick={fitWidth} className="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] min-w-[44px] text-center transition-colors">
+                {Math.round(scale * 100)}%
+              </button>
+              <button onClick={zoomIn} className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all" title="Zoom in">
+                <ZoomIn size={14} />
               </button>
             </div>
-          )}
 
-          {/* Canvas Container */}
-          <div ref={containerRef} className="flex-1 overflow-auto bg-gray-100 dark:bg-[#2a2a2a] flex justify-center p-4">
+            {numPages > 0 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage <= 1}
+                  className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all disabled:opacity-30"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <span className="text-xs text-[var(--muted-foreground)]">
+                  Page {currentPage} of {numPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
+                  disabled={currentPage >= numPages}
+                  className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all disabled:opacity-30"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Canvas - scrollable area */}
+          <div ref={containerRef} className="flex-1 overflow-auto bg-gray-50 dark:bg-[#1e1e1e] flex justify-center p-6 min-h-0">
             <canvas
               ref={canvasRef}
-              className="shadow-lg rounded-sm bg-white"
+              className="shadow-lg rounded-sm bg-white flex-shrink-0"
             />
           </div>
         </>
       ) : (
         /* Text Content Fallback */
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-h-0">
           <div className="max-w-3xl mx-auto px-8 py-8">
             <div className="prose prose-sm dark:prose-invert max-w-none
               prose-headings:font-bold prose-headings:text-[var(--foreground)]
