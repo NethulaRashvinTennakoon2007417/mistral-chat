@@ -69,8 +69,14 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
       };
 
       if (file.type === 'application/pdf') {
+        // Store PDF as base64 for rendering
+        const arrayBuffer = await file.arrayBuffer();
+        const base64 = btoa(
+          new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+        attachment.url = `data:application/pdf;base64,${base64}`;
+
         try {
-          const arrayBuffer = await file.arrayBuffer();
           const pdfjsLib = await import('pdfjs-dist');
           pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
           const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;

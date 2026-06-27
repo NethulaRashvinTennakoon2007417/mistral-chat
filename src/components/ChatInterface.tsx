@@ -438,6 +438,7 @@ export function ChatInterface() {
             title={documentAttachment.name}
             content={documentAttachment.extractedText || documentAttachment.content || 'No content available'}
             fileName={documentAttachment.name}
+            fileData={documentAttachment.url}
             onClose={closeDocument}
           />
         </div>
