@@ -51,7 +51,7 @@ function AppContent() {
         </div>
 
         {/* Hero Section */}
-        <main className="max-w-5xl mx-auto px-6 py-16">
+        <main className="max-w-5xl mx-auto px-6 pt-28 pb-16">
           <div className="text-center mb-16">
             <h1 className="text-5xl font-bold text-[var(--foreground)] mb-4 leading-tight hero-animate">
               Chat with <mark className="highlight">Mistral AI</mark>
