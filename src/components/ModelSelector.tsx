@@ -73,7 +73,7 @@ export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelS
         <>
           <div className="fixed inset-0 z-[60]" onClick={() => setIsOpen(false)} />
           <div
-            className="fixed bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-[70] overflow-hidden modal-panel"
+            className="fixed bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-[70] modal-panel"
             style={dropdownStyle}
           >
             <div className="p-2 border-b border-[var(--border)]">
