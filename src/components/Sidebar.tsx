@@ -193,7 +193,7 @@ export function Sidebar() {
       )}
 
       <div
-        className={`h-full bg-[var(--background)] border-r border-[var(--border)] flex flex-col fixed left-0 top-0 z-50 transition-[width,transform] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]`}
+        className={`sidebar-panel h-full bg-[var(--background)] border-r border-[var(--border)] flex flex-col fixed left-0 top-0 z-50`}
         style={{
           width: sidebarWidth,
           transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
