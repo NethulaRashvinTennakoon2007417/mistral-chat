@@ -23,10 +23,12 @@ const MODEL_ICONS: Record<string, React.ReactNode> = {
   'pixtral-large-latest': <Eye size={14} className="text-purple-500" />,
 };
 
+const DROPDOWN_HEIGHT = 420;
+
 export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
 
   const displayName = selectedModel === 'auto' && resolvedModel
     ? `Auto → ${MISTRAL_MODELS[resolvedModel as MistralModel]?.name || resolvedModel}`
@@ -35,9 +37,16 @@ export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelS
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.bottom + window.scrollY + 4,
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUpward = spaceBelow < DROPDOWN_HEIGHT;
+
+      setDropdownStyle({
+        position: 'fixed',
+        width: 320,
         right: window.innerWidth - rect.right,
+        ...(openUpward
+          ? { bottom: window.innerHeight - rect.top + 4 }
+          : { top: rect.bottom + 4 }),
       });
     }
   }, [isOpen]);
@@ -58,8 +67,8 @@ export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelS
         <>
           <div className="fixed inset-0 z-[60]" onClick={() => setIsOpen(false)} />
           <div
-            className="fixed w-80 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-[70] overflow-hidden modal-panel"
-            style={{ top: dropdownPos.top, right: dropdownPos.right }}
+            className="fixed bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-[70] overflow-hidden modal-panel"
+            style={dropdownStyle}
           >
             <div className="p-2 border-b border-[var(--border)]">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-2 py-1">
