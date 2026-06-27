@@ -30,14 +30,25 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
       const blob = new Blob([bytes], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
+      const prevUrl = pdfBlobUrl;
       setPdfBlobUrl(url);
-      return () => URL.revokeObjectURL(url);
+      // Delay revoking old URL so new iframe can load first
+      if (prevUrl) {
+        setTimeout(() => URL.revokeObjectURL(prevUrl), 1000);
+      }
     }
   }, [isPDF, fileData]);
 
   useEffect(() => {
     setLastSaved(new Date());
   }, [content]);
+
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+    };
+  }, []);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content || '');

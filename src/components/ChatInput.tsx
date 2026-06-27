@@ -89,6 +89,8 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const pageText = (content.items as any[]).filter((item: any) => item.str).map((item: any) => item.str).join(' ');
             textParts.push(pageText);
+            // Yield to main thread every 5 pages to prevent freezing
+            if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
           }
           attachment.extractedText = textParts.join('\n\n').slice(0, 30000);
         } catch (err) {
