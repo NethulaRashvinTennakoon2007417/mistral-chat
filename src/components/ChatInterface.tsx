@@ -4,10 +4,11 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useChat } from '@/context/ChatContext';
 import { Message } from '@/components/Message';
 import { ChatInput } from '@/components/ChatInput';
+import { DocumentViewer } from '@/components/DocumentViewer';
 import { streamChatCompletion, generateTitle } from '@/lib/mistral';
 import { detectModel } from '@/lib/auto-model';
 import { Message as MessageType, Attachment, MistralModel, ResolvedModel } from '@/types';
-import { Menu, Share2, Check, AlertCircle, X, Plus, Sparkles } from 'lucide-react';
+import { Menu, Share2, Check, AlertCircle, X, Plus, Sparkles, FileText } from 'lucide-react';
 import { stripMarkdown } from '@/lib/utils';
 
 function getGreeting() {
@@ -35,6 +36,9 @@ export function ChatInterface() {
     setIsGenerating,
     createNewChat,
     toggleSettings,
+    documentAttachment,
+    openDocument,
+    closeDocument,
   } = useChat();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -96,6 +100,14 @@ export function ChatInterface() {
       attachments,
       timestamp: new Date(),
     };
+
+    // Auto-open PDF in document viewer
+    if (attachments && attachments.length > 0) {
+      const pdfAttachment = attachments.find(a => a.type === 'application/pdf');
+      if (pdfAttachment) {
+        openDocument(pdfAttachment);
+      }
+    }
 
     const assistantMsg: MessageType = {
       id: assistantMsgId,
@@ -262,7 +274,9 @@ export function ChatInterface() {
   const hasMessages = currentChat && currentChat.messages.length > 0;
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--background)] relative overflow-hidden">
+    <div className="flex-1 flex flex-row bg-[var(--background)] relative overflow-hidden">
+      {/* Chat Panel */}
+      <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden">
       {/* Header - only show when there are messages */}
       {hasMessages && (
         <header className="flex items-center justify-between px-3 h-12 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm sticky top-0 z-40 animate-slide-down">
@@ -349,6 +363,7 @@ export function ChatInterface() {
                       ? (content) => handleEditMessage(message.id, content)
                       : undefined
                   }
+                  onOpenDocument={openDocument}
                 />
               ))}
               <div ref={messagesEndRef} />
@@ -412,6 +427,19 @@ export function ChatInterface() {
               resolvedModel={resolvedModel}
             />
           </div>
+        </div>
+      )}
+      </div>
+
+      {/* Document Viewer Panel */}
+      {documentAttachment && (
+        <div className="w-[55%] flex-shrink-0">
+          <DocumentViewer
+            title={documentAttachment.name}
+            content={documentAttachment.extractedText || documentAttachment.content || 'No content available'}
+            fileName={documentAttachment.name}
+            onClose={closeDocument}
+          />
         </div>
       )}
     </div>

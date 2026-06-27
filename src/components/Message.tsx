@@ -13,9 +13,10 @@ interface MessageProps {
   isStreaming?: boolean;
   onRetry?: () => void;
   onEdit?: (content: string) => void;
+  onOpenDocument?: (attachment: { id: string; name: string; type: string; size: number; url?: string; content?: string; extractedText?: string }) => void;
 }
 
-export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: MessageProps) {
+export function Message({ message, isLatest, isStreaming, onRetry, onEdit, onOpenDocument }: MessageProps) {
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
@@ -138,10 +139,14 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit }: Mes
                 {message.attachments && message.attachments.filter(a => !a.type.startsWith('image/')).length > 0 && (
                   <div className="flex gap-1.5 flex-wrap mb-2">
                     {message.attachments.filter(a => !a.type.startsWith('image/')).map(att => (
-                      <div key={att.id} className="flex items-center gap-1.5 px-2 py-1 bg-white/10 rounded-md text-xs">
+                      <button
+                        key={att.id}
+                        onClick={() => onOpenDocument?.(att)}
+                        className="flex items-center gap-1.5 px-2 py-1 bg-white/10 rounded-md text-xs hover:bg-white/20 transition-colors cursor-pointer"
+                      >
                         <FileText size={10} />
                         <span className="truncate max-w-[100px]">{att.name}</span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 )}

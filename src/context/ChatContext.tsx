@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { Chat, Message, MistralModel, Settings } from '@/types';
+import { Chat, Message, MistralModel, Settings, Attachment } from '@/types';
 import { getChats, saveChat, deleteChat, getSettings, saveSettings } from '@/lib/storage';
 import { generateId } from '@/lib/utils';
 
@@ -13,6 +13,7 @@ interface ChatContextType {
   sidebarOpen: boolean;
   sidebarCollapsed: boolean;
   settingsOpen: boolean;
+  documentAttachment: Attachment | null;
   createNewChat: (model?: MistralModel) => Chat;
   setCurrentChat: (chat: Chat | null) => void;
   updateChat: (chat: Chat | ((prev: Chat | null) => Chat | null)) => void;
@@ -24,6 +25,8 @@ interface ChatContextType {
   toggleSidebar: () => void;
   toggleSidebarCollapse: () => void;
   toggleSettings: () => void;
+  openDocument: (attachment: Attachment) => void;
+  closeDocument: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -42,6 +45,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [documentAttachment, setDocumentAttachment] = useState<Attachment | null>(null);
 
   // Use refs for values needed in callbacks to avoid stale closures
   const currentChatRef = useRef<Chat | null>(null);
@@ -212,6 +216,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setSettingsOpen((prev) => !prev);
   }, []);
 
+  const openDocument = useCallback((attachment: Attachment) => {
+    setDocumentAttachment(attachment);
+  }, []);
+
+  const closeDocument = useCallback(() => {
+    setDocumentAttachment(null);
+  }, []);
+
   return (
     <ChatContext.Provider
       value={{
@@ -222,6 +234,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         sidebarOpen,
         sidebarCollapsed,
         settingsOpen,
+        documentAttachment,
         createNewChat,
         setCurrentChat,
         updateChat,
@@ -233,6 +246,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         toggleSidebar,
         toggleSidebarCollapse,
         toggleSettings,
+        openDocument,
+        closeDocument,
       }}
     >
       {children}
