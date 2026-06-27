@@ -4,7 +4,6 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useChat } from '@/context/ChatContext';
 import { Message } from '@/components/Message';
 import { ChatInput } from '@/components/ChatInput';
-import { ModelSelector } from '@/components/ModelSelector';
 import { streamChatCompletion, generateTitle } from '@/lib/mistral';
 import { detectModel } from '@/lib/auto-model';
 import { Message as MessageType, Attachment, MistralModel, ResolvedModel } from '@/types';
@@ -288,7 +287,6 @@ export function ChatInterface() {
               <Plus size={14} />
               <span className="hidden sm:inline">New Chat</span>
             </button>
-            <ModelSelector selectedModel={currentChat?.model || 'mistral-small-latest'} onSelect={handleModelChange} resolvedModel={resolvedModel} />
             <button
               onClick={handleShare}
               className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
@@ -311,9 +309,6 @@ export function ChatInterface() {
             >
               <Menu size={18} />
             </button>
-          </div>
-          <div className="flex items-center gap-1">
-            <ModelSelector selectedModel={currentChat?.model || 'mistral-small-latest'} onSelect={handleModelChange} resolvedModel={resolvedModel} />
           </div>
         </header>
       )}
@@ -377,6 +372,9 @@ export function ChatInterface() {
                     isGenerating={isGenerating}
                     disabled={!settings.apiKey}
                     variant="centered"
+                    selectedModel={currentChat?.model || 'auto'}
+                    onSelectModel={handleModelChange}
+                    resolvedModel={resolvedModel}
                   />
                 </div>
 
@@ -409,6 +407,9 @@ export function ChatInterface() {
               onStop={handleStop}
               isGenerating={isGenerating}
               disabled={!settings.apiKey}
+              selectedModel={currentChat?.model || 'auto'}
+              onSelectModel={handleModelChange}
+              resolvedModel={resolvedModel}
             />
           </div>
         </div>

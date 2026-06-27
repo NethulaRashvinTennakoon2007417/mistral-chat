@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, Mic, MicOff, StopCircle, Image, FileText, Plus } from 'lucide-react';
-import { Attachment } from '@/types';
+import { Attachment, MistralModel } from '@/types';
 import { generateId } from '@/lib/utils';
+import { ModelSelector } from './ModelSelector';
 
 interface ChatInputProps {
   onSend: (content: string, attachments?: Attachment[]) => void;
@@ -11,9 +12,12 @@ interface ChatInputProps {
   isGenerating: boolean;
   disabled?: boolean;
   variant?: 'default' | 'centered';
+  selectedModel?: MistralModel;
+  onSelectModel?: (model: MistralModel) => void;
+  resolvedModel?: string | null;
 }
 
-export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'default' }: ChatInputProps) {
+export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'default', selectedModel, onSelectModel, resolvedModel }: ChatInputProps) {
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -200,6 +204,14 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
                 accept="image/*,.txt,.json,.md,.csv,.pdf"
               />
 
+              {selectedModel && onSelectModel && (
+                <ModelSelector
+                  selectedModel={selectedModel}
+                  onSelect={onSelectModel}
+                  resolvedModel={resolvedModel}
+                />
+              )}
+
               {isRecording ? (
                 <button
                   onClick={stopRecording}
@@ -301,6 +313,14 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
           className="hidden"
           accept="image/*,.txt,.json,.md,.csv,.pdf"
         />
+
+        {selectedModel && onSelectModel && (
+          <ModelSelector
+            selectedModel={selectedModel}
+            onSelect={onSelectModel}
+            resolvedModel={resolvedModel}
+          />
+        )}
 
         <textarea
           ref={textareaRef}

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { MistralModel, MISTRAL_MODELS } from '@/types';
 import { ChevronDown, Check, Zap, Brain, Code, Eye, Sparkles } from 'lucide-react';
 
@@ -24,14 +25,27 @@ const MODEL_ICONS: Record<string, React.ReactNode> = {
 
 export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
 
   const displayName = selectedModel === 'auto' && resolvedModel
     ? `Auto → ${MISTRAL_MODELS[resolvedModel as MistralModel]?.name || resolvedModel}`
     : MISTRAL_MODELS[selectedModel].name;
 
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + window.scrollY + 4,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, [isOpen]);
+
   return (
-    <div className="relative">
+    <div className="relative flex-shrink-0">
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--foreground)] transition-all duration-200 text-sm h-8 active:scale-95"
       >
@@ -40,10 +54,13 @@ export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelS
         <ChevronDown size={12} className={`text-[var(--muted-foreground)] transition-transform duration-300 ease-out ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {isOpen && (
+      {isOpen && typeof document !== 'undefined' && createPortal(
         <>
           <div className="fixed inset-0 z-[60]" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-full mt-1 w-80 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-[70] overflow-hidden modal-panel">
+          <div
+            className="fixed w-80 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-[70] overflow-hidden modal-panel"
+            style={{ top: dropdownPos.top, right: dropdownPos.right }}
+          >
             <div className="p-2 border-b border-[var(--border)]">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-2 py-1">
                 Select Model
@@ -92,7 +109,8 @@ export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelS
               ))}
             </div>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );
