@@ -23,10 +23,16 @@ const MODEL_ICONS: Record<string, React.ReactNode> = {
   'pixtral-large-latest': <Eye size={14} className="text-purple-500" />,
 };
 
+const HEADER_HEIGHT = 42;
+const ITEM_HEIGHT = 56;
+const PADDING = 12;
+const MAX_ITEMS = Object.keys(MISTRAL_MODELS).length;
+
 export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [pos, setPos] = useState<{ top: number; right: number; maxH: number }>({ top: 0, right: 0, maxH: 400 });
+  const [pos, setPos] = useState({ top: 0, right: 0 });
+  const [listMaxH, setListMaxH] = useState(400);
 
   const displayName = selectedModel === 'auto' && resolvedModel
     ? `Auto → ${MISTRAL_MODELS[resolvedModel as MistralModel]?.name || resolvedModel}`
@@ -35,17 +41,20 @@ export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelS
   const calcPosition = useCallback(() => {
     if (!buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    const margin = 16;
-    const headerH = 44;
+    const spaceBelow = window.innerHeight - rect.bottom - PADDING;
+    const spaceAbove = rect.top - PADDING;
+    const fullH = HEADER_HEIGHT + (MAX_ITEMS * ITEM_HEIGHT) + PADDING;
+    const fitsBelow = spaceBelow >= fullH;
+    const fitsAbove = spaceAbove >= fullH;
 
-    if (spaceBelow >= spaceAbove) {
-      const maxH = Math.min(spaceBelow - margin, 440);
-      setPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right, maxH: Math.max(maxH, headerH + 60) });
+    if (fitsBelow || (!fitsAbove && spaceBelow >= spaceAbove)) {
+      const maxH = Math.min(spaceBelow, MAX_ITEMS * ITEM_HEIGHT);
+      setPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+      setListMaxH(maxH - HEADER_HEIGHT);
     } else {
-      const maxH = Math.min(spaceAbove - margin, 440);
-      setPos({ top: Math.max(8, rect.top - 4 - maxH), right: window.innerWidth - rect.right, maxH: Math.max(maxH, headerH + 60) });
+      const maxH = Math.min(spaceAbove, MAX_ITEMS * ITEM_HEIGHT);
+      setPos({ top: rect.top - 4 - HEADER_HEIGHT - maxH, right: window.innerWidth - rect.right });
+      setListMaxH(maxH - HEADER_HEIGHT);
     }
   }, []);
 
@@ -62,7 +71,7 @@ export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelS
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--foreground)] transition-all duration-200 text-sm h-8 active:scale-95"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-[var(--muted)] text-[var(--foreground)] transition-all duration-200 text-sm h-8 active:scale-95"
       >
         {MODEL_ICONS[selectedModel]}
         <span className="font-medium">{displayName}</span>
@@ -74,56 +83,54 @@ export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelS
           <div className="fixed inset-0 z-[60]" onClick={() => setIsOpen(false)} />
           <div
             className="fixed w-80 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-[70] modal-panel"
-            style={{ position: 'fixed', top: pos.top, right: pos.right, maxHeight: pos.maxH, display: 'flex', flexDirection: 'column' }}
+            style={{ top: pos.top, right: pos.right }}
           >
-            <div className="p-2 border-b border-[var(--border)] flex-shrink-0">
+            <div className="p-2 border-b border-[var(--border)]">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-2 py-1">
                 Select Model
               </p>
             </div>
-            <div style={{ overflowY: 'auto', flex: '1 1 0', minHeight: 0 }}>
-              <div className="p-1.5">
-                {Object.entries(MISTRAL_MODELS).map(([id, model], index) => (
-                  <button
-                    key={id}
-                    onClick={() => {
-                      onSelect(id as MistralModel);
-                      setIsOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 animate-stagger-in ${
-                      selectedModel === id
-                        ? 'bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm'
-                        : 'hover:bg-[var(--muted)] text-[var(--foreground)] hover:translate-x-0.5'
-                    }`}
-                    style={{ animationDelay: `${index * 30}ms` }}
-                  >
-                    <div className="flex-shrink-0">
-                      {MODEL_ICONS[id]}
+            <div className="p-1.5" style={{ maxHeight: listMaxH, overflowY: 'auto' }}>
+              {Object.entries(MISTRAL_MODELS).map(([id, model], index) => (
+                <button
+                  key={id}
+                  onClick={() => {
+                    onSelect(id as MistralModel);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 animate-stagger-in ${
+                    selectedModel === id
+                      ? 'bg-[var(--accent)] text-[var(--accent-foreground)] shadow-sm'
+                      : 'hover:bg-[var(--muted)] text-[var(--foreground)] hover:translate-x-0.5'
+                  }`}
+                  style={{ animationDelay: `${index * 30}ms` }}
+                >
+                  <div className="flex-shrink-0">
+                    {MODEL_ICONS[id]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium">{model.name}</p>
+                      {id === 'auto' && (
+                        <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                          <Sparkles size={9} />
+                          Smart
+                        </span>
+                      )}
+                      {model.supportsVision && (
+                        <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                          <Eye size={9} />
+                          Vision
+                        </span>
+                      )}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-medium">{model.name}</p>
-                        {id === 'auto' && (
-                          <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-                            <Sparkles size={9} />
-                            Smart
-                          </span>
-                        )}
-                        {model.supportsVision && (
-                          <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
-                            <Eye size={9} />
-                            Vision
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-[var(--muted-foreground)] truncate">{model.description}</p>
-                    </div>
-                    {selectedModel === id && (
-                      <Check size={14} className="text-[var(--primary)] flex-shrink-0" />
-                    )}
-                  </button>
-                ))}
-              </div>
+                    <p className="text-[11px] text-[var(--muted-foreground)] truncate">{model.description}</p>
+                  </div>
+                  {selectedModel === id && (
+                    <Check size={14} className="text-[var(--primary)] flex-shrink-0" />
+                  )}
+                </button>
+              ))}
             </div>
           </div>
         </>,
