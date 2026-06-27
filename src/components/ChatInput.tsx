@@ -166,7 +166,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
 
         {/* Centered Input Box */}
         <div 
-          className={`bg-[var(--card)] border rounded-2xl transition-all duration-300 ease-out ${
+          className={`bg-[var(--card)] border rounded-2xl transition-all duration-300 ease-out overflow-visible ${
             isFocused 
               ? 'border-[var(--primary)] shadow-[0_0_0_3px_rgba(217,119,6,0.08)]' 
               : 'border-[var(--border)] shadow-sm hover:shadow-md hover:border-[var(--muted-foreground)]'
@@ -292,7 +292,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
 
       {/* Input */}
       <div 
-        className={`flex items-center gap-1 bg-[var(--card)] rounded-2xl border transition-all duration-300 ease-out ${
+        className={`flex items-center gap-1 bg-[var(--card)] rounded-2xl border transition-all duration-300 ease-out overflow-visible ${
           isFocused 
             ? 'border-[var(--primary)] shadow-[0_0_0_3px_rgba(217,119,6,0.08)]' 
             : 'border-[var(--border)] hover:shadow-sm hover:border-[var(--muted-foreground)]'
