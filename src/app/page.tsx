@@ -7,7 +7,7 @@ import { SettingsPanel } from '@/components/SettingsPanel';
 import { MessageSquare, Zap, Shield, Globe, ChevronRight, Sparkles, Heart, Users, Lock } from 'lucide-react';
 
 function AppContent() {
-  const { currentChat, sidebarOpen, sidebarCollapsed, createNewChat } = useChat();
+  const { currentChat, sidebarOpen, sidebarCollapsed, chats, createNewChat, setCurrentChat } = useChat();
 
   const sidebarWidth = sidebarCollapsed ? 'ml-[60px]' : 'ml-[260px]';
 
@@ -59,7 +59,16 @@ function AppContent() {
               Nothing is stored on servers.
             </p>
             <button
-              onClick={() => createNewChat()}
+              onClick={() => {
+                if (chats.length > 0) {
+                  const lastChat = chats.reduce((latest, chat) =>
+                    new Date(chat.updatedAt) > new Date(latest.updatedAt) ? chat : latest
+                  );
+                  setCurrentChat(lastChat);
+                } else {
+                  createNewChat();
+                }
+              }}
               className="btn btn-primary text-base px-8 py-3 rounded-xl shadow-lg shadow-orange-500/25 hero-animate active:scale-95 transition-all duration-200"
               style={{ animationDelay: '160ms' }}
             >
