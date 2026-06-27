@@ -37,16 +37,28 @@ export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelS
       const rect = buttonRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
-      const openUpward = spaceAbove > spaceBelow;
+      const padding = 12;
+      const headerHeight = 40;
 
-      setDropdownStyle({
-        position: 'fixed',
-        width: 320,
-        right: window.innerWidth - rect.right,
-        ...(openUpward
-          ? { bottom: window.innerHeight - rect.top + 4 }
-          : { top: rect.bottom + 4 }),
-      });
+      if (spaceBelow > spaceAbove) {
+        const maxHeight = Math.min(spaceBelow - padding, 440);
+        setDropdownStyle({
+          position: 'fixed',
+          width: 320,
+          top: rect.bottom + 4,
+          right: window.innerWidth - rect.right,
+          maxHeight,
+        });
+      } else {
+        const maxHeight = Math.min(spaceAbove - padding, 440);
+        setDropdownStyle({
+          position: 'fixed',
+          width: 320,
+          bottom: window.innerHeight - rect.top + 4,
+          right: window.innerWidth - rect.right,
+          maxHeight,
+        });
+      }
     }
   }, [isOpen]);
 
@@ -66,15 +78,15 @@ export function ModelSelector({ selectedModel, onSelect, resolvedModel }: ModelS
         <>
           <div className="fixed inset-0 z-[60]" onClick={() => setIsOpen(false)} />
           <div
-            className="fixed bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-[70] modal-panel"
+            className="fixed w-80 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl z-[70] flex flex-col modal-panel"
             style={dropdownStyle}
           >
-            <div className="p-2 border-b border-[var(--border)]">
+            <div className="p-2 border-b border-[var(--border)] flex-shrink-0">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-2 py-1">
                 Select Model
               </p>
             </div>
-            <div className="max-h-[400px] overflow-y-auto p-1.5">
+            <div className="overflow-y-auto p-1.5 min-h-0">
               {Object.entries(MISTRAL_MODELS).map(([id, model], index) => (
                 <button
                   key={id}
