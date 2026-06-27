@@ -8,7 +8,7 @@ import { DocumentViewer } from '@/components/DocumentViewer';
 import { streamChatCompletion, generateTitle } from '@/lib/mistral';
 import { detectModel } from '@/lib/auto-model';
 import { Message as MessageType, Attachment, MistralModel, ResolvedModel } from '@/types';
-import { Menu, Share2, Check, AlertCircle, X, Plus, Sparkles, FileText } from 'lucide-react';
+import { Share2, Check, AlertCircle, X, Plus, Sparkles, FileText } from 'lucide-react';
 import { stripMarkdown } from '@/lib/utils';
 
 function getGreeting() {
@@ -300,13 +300,6 @@ export function ChatInterface() {
       {hasMessages && (
         <header className="flex items-center justify-between px-3 h-12 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm sticky top-0 z-40 animate-slide-down">
           <div className="flex items-center gap-2">
-            <button
-              onClick={toggleSidebar}
-              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
-              title="Toggle sidebar (Ctrl+B)"
-            >
-              <Menu size={18} />
-            </button>
             <span className="text-sm font-medium text-[var(--foreground)] line-clamp-1">
               {stripMarkdown(currentChat?.title || 'New Chat')}
             </span>
@@ -331,17 +324,10 @@ export function ChatInterface() {
         </header>
       )}
 
-      {/* Empty state header - just sidebar toggle */}
+      {/* Empty state header */}
       {!hasMessages && (
         <header className="flex items-center justify-between px-3 h-12 bg-[var(--background)] sticky top-0 z-40">
           <div className="flex items-center gap-2">
-            <button
-              onClick={toggleSidebar}
-              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
-              title="Toggle sidebar (Ctrl+B)"
-            >
-              <Menu size={18} />
-            </button>
           </div>
         </header>
       )}
