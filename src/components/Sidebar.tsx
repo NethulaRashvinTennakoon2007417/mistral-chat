@@ -200,7 +200,7 @@ export function Sidebar() {
         }}
       >
         {/* Header */}
-        <div className={`flex items-center ${isCollapsed ? 'justify-center px-2 py-3' : 'justify-between px-4 py-3'} border-b border-[var(--border)]`}>
+        <div className={`flex items-center ${isCollapsed ? 'justify-center px-2 py-3' : 'justify-between px-4 py-3'}`}>
           {!isCollapsed && (
             <button
               onClick={() => setCurrentChat(null)}
@@ -212,6 +212,13 @@ export function Sidebar() {
               <span className="text-sm font-semibold text-[var(--foreground)]">Mistral Chat</span>
             </button>
           )}
+          <button
+            onClick={() => setIsCollapsed()}
+            className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200"
+            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <ChevronLeft size={16} className={`transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
+          </button>
         </div>
 
         {/* New Chat */}
