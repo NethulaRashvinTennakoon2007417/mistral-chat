@@ -298,7 +298,7 @@ export function ChatInterface() {
       <div className="flex-1 flex flex-col min-w-0 relative overflow-hidden">
       {/* Header - only show when there are messages */}
       {hasMessages && (
-        <header className="flex items-center justify-between px-3 h-12 border-b border-[var(--border)] bg-[var(--background)]/80 backdrop-blur-sm sticky top-0 z-40 animate-slide-down">
+        <header className="flex items-center justify-between px-3 h-12 bg-[var(--background)]/80 backdrop-blur-sm sticky top-0 z-40 animate-slide-down">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-[var(--foreground)] line-clamp-1">
               {stripMarkdown(currentChat?.title || 'New Chat')}
