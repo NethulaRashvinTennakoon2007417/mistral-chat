@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Download, Copy, Check, FileText, Bold, Italic, Strikethrough, Heading1, Undo2, Redo2, ChevronDown } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
@@ -16,10 +16,14 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
   const [copied, setCopied] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
-  const [viewMode, setViewMode] = useState<'formatted' | 'pdf'>('formatted');
   const contentRef = useRef<HTMLDivElement>(null);
+  const [lastSaved, setLastSaved] = useState(new Date());
 
   const isPDF = fileData?.startsWith('data:application/pdf');
+
+  useEffect(() => {
+    setLastSaved(new Date());
+  }, [content]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content || '');
@@ -62,6 +66,17 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
     contentRef.current?.focus();
   };
 
+  const formatLastSaved = (date: Date) => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'Just now';
+    if (diffMin < 60) return `${diffMin} min ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr} hr ago`;
+    return date.toLocaleDateString();
+  };
+
   return (
     <div className="flex flex-col h-full bg-white dark:bg-[#1a1a1a] border-l border-[var(--border)] animate-slide-in-right">
       {/* Header */}
@@ -75,9 +90,9 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
           </button>
           <div className="min-w-0">
             <h2 className="text-sm font-medium text-[var(--foreground)] truncate max-w-[200px]">{title}</h2>
-            {fileName && (
-              <p className="text-[10px] text-[var(--muted-foreground)] truncate max-w-[200px]">{fileName}</p>
-            )}
+            <p className="text-[10px] text-[var(--muted-foreground)]">
+              Last saved {formatLastSaved(lastSaved)}
+            </p>
           </div>
         </div>
 
@@ -89,31 +104,6 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
             {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
             {copied ? 'Copied' : 'Copy'}
           </button>
-
-          {isPDF && (
-            <div className="flex items-center bg-[var(--muted)] rounded-md p-0.5">
-              <button
-                onClick={() => setViewMode('formatted')}
-                className={`px-2 py-1 rounded text-[11px] font-medium transition-all duration-200 ${
-                  viewMode === 'formatted'
-                    ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
-                    : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
-                }`}
-              >
-                Text
-              </button>
-              <button
-                onClick={() => setViewMode('pdf')}
-                className={`px-2 py-1 rounded text-[11px] font-medium transition-all duration-200 ${
-                  viewMode === 'pdf'
-                    ? 'bg-[var(--background)] text-[var(--foreground)] shadow-sm'
-                    : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
-                }`}
-              >
-                PDF
-              </button>
-            </div>
-          )}
 
           <div className="relative">
             <button
@@ -158,7 +148,7 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
       </div>
 
       {/* Formatting Toolbar */}
-      {viewMode === 'formatted' && (
+      {isPDF && (
         <div className="flex items-center gap-0.5 px-3 py-1.5 border-b border-[var(--border)] bg-[var(--background)] flex-shrink-0">
           <div className="relative">
             <button
@@ -246,7 +236,7 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
 
       {/* Content */}
       <div className="flex-1 overflow-hidden min-h-0">
-        {viewMode === 'pdf' && isPDF ? (
+        {isPDF ? (
           <iframe
             src={fileData}
             className="w-full h-full border-none"
@@ -284,14 +274,6 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
             </div>
             <p className="text-sm font-medium text-[var(--foreground)] mb-1">No content to display</p>
             <p className="text-xs text-[var(--muted-foreground)]">This document has no extractable text content.</p>
-            {isPDF && (
-              <button
-                onClick={() => setViewMode('pdf')}
-                className="mt-4 px-3 py-1.5 rounded-md bg-[var(--foreground)] text-[var(--background)] text-xs font-medium hover:opacity-90 transition-all duration-200"
-              >
-                View as PDF
-              </button>
-            )}
           </div>
         )}
       </div>

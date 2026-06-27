@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Mic, MicOff, StopCircle, Image, FileText, Plus } from 'lucide-react';
+import { Send, Paperclip, Mic, MicOff, StopCircle, Image, FileText, Plus, PanelRight } from 'lucide-react';
 import { Attachment, MistralModel } from '@/types';
 import { generateId } from '@/lib/utils';
 import { ModelSelector } from './ModelSelector';
@@ -15,9 +15,11 @@ interface ChatInputProps {
   selectedModel?: MistralModel;
   onSelectModel?: (model: MistralModel) => void;
   resolvedModel?: string | null;
+  showCanvas?: boolean;
+  onToggleCanvas?: () => void;
 }
 
-export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'default', selectedModel, onSelectModel, resolvedModel }: ChatInputProps) {
+export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'default', selectedModel, onSelectModel, resolvedModel, showCanvas, onToggleCanvas }: ChatInputProps) {
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -235,6 +237,20 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
                   <Mic size={18} />
                 </button>
               )}
+
+              {onToggleCanvas && (
+                <button
+                  onClick={onToggleCanvas}
+                  className={`flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200 active:scale-95 ${
+                    showCanvas
+                      ? 'bg-[var(--primary)] text-white'
+                      : 'hover:bg-[var(--muted)] text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
+                  }`}
+                  title={showCanvas ? 'Close Canvas' : 'Open Canvas'}
+                >
+                  <PanelRight size={18} />
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-0.5">
@@ -356,6 +372,20 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
             title="Voice input"
           >
             <Mic size={18} />
+          </button>
+        )}
+
+        {onToggleCanvas && (
+          <button
+            onClick={onToggleCanvas}
+            className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 flex-shrink-0 active:scale-95 ${
+              showCanvas
+                ? 'bg-[var(--primary)] text-white'
+                : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
+            }`}
+            title={showCanvas ? 'Close Canvas' : 'Open Canvas'}
+          >
+            <PanelRight size={18} />
           </button>
         )}
 

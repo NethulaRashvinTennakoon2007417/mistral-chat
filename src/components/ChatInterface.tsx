@@ -390,6 +390,8 @@ export function ChatInterface() {
                     selectedModel={currentChat?.model || 'auto'}
                     onSelectModel={handleModelChange}
                     resolvedModel={resolvedModel}
+                    showCanvas={!!documentAttachment}
+                    onToggleCanvas={() => documentAttachment ? closeDocument() : undefined}
                   />
                 </div>
 
@@ -425,6 +427,8 @@ export function ChatInterface() {
               selectedModel={currentChat?.model || 'auto'}
               onSelectModel={handleModelChange}
               resolvedModel={resolvedModel}
+              showCanvas={!!documentAttachment}
+              onToggleCanvas={() => documentAttachment ? closeDocument() : undefined}
             />
           </div>
         </div>
