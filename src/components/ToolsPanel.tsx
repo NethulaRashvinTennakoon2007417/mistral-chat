@@ -372,6 +372,8 @@ function ColorPicker() {
 function ImageToPDF() {
   const [images, setImages] = useState<{ name: string; url: string; width: number; height: number }[]>([]);
   const [processing, setProcessing] = useState(false);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [pdfFileName, setPdfFileName] = useState('images.pdf');
 
   const handleFiles = async (files: FileList) => {
     const newImages: { name: string; url: string; width: number; height: number }[] = [];
@@ -424,12 +426,24 @@ function ImageToPDF() {
         pdf.addImage(img.url, 'JPEG', x, y, w, h);
       }
 
-      pdf.save('images.pdf');
+      const blob = pdf.output('blob');
+      const url = URL.createObjectURL(blob);
+      if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+      setPdfBlobUrl(url);
+      setPdfFileName('images.pdf');
     } catch (err) {
       console.error('PDF generation failed:', err);
     } finally {
       setProcessing(false);
     }
+  };
+
+  const downloadPDF = () => {
+    if (!pdfBlobUrl) return;
+    const a = document.createElement('a');
+    a.href = pdfBlobUrl;
+    a.download = pdfFileName;
+    a.click();
   };
 
   return (
@@ -499,6 +513,27 @@ function ImageToPDF() {
             {processing ? 'Generating...' : `Generate PDF (${images.length} image${images.length > 1 ? 's' : ''})`}
           </button>
         </>
+      )}
+
+      {pdfBlobUrl && (
+        <div className="border border-[var(--border)] rounded-xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2 bg-[var(--muted)] border-b border-[var(--border)]">
+            <p className="text-sm font-medium text-[var(--foreground)]">{pdfFileName}</p>
+            <button
+              onClick={downloadPDF}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white text-xs font-medium hover:opacity-90 transition-all"
+            >
+              <Download size={12} />
+              Download
+            </button>
+          </div>
+          <iframe
+            src={pdfBlobUrl}
+            className="w-full border-none"
+            style={{ height: '500px' }}
+            title="PDF Preview"
+          />
+        </div>
       )}
     </div>
   );
