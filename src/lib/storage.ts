@@ -83,6 +83,7 @@ export function getSettings(): Settings {
     defaultModel: 'auto',
     temperature: 0.7,
     maxTokens: 4096,
+    memories: [],
     systemPrompt: '',
   };
 
@@ -95,6 +96,7 @@ export function getSettings(): Settings {
     return {
       ...defaults,
       ...parsed,
+      memories: Array.isArray(parsed.memories) ? parsed.memories : [],
       defaultModel: sanitizeModel(parsed.defaultModel),
     };
   } catch {

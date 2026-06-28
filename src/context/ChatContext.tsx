@@ -41,6 +41,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     defaultModel: 'auto',
     temperature: 0.7,
     maxTokens: 4096,
+    memories: [],
     systemPrompt: `You are Mistral Chat, a friendly and capable AI assistant running inside a web application called Mistral Chat. You are powered by Mistral AI's language models.
 
 About Mistral Chat:

@@ -80,6 +80,15 @@ export function ChatInterface() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [toggleSidebar]);
 
+  const getSystemPrompt = useCallback(() => {
+    const parts: string[] = [];
+    if (settings.systemPrompt) parts.push(settings.systemPrompt);
+    if (settings.memories && settings.memories.length > 0) {
+      parts.push(`\nFacts about the user (remember these across conversations):\n${settings.memories.map(m => `- ${m}`).join('\n')}`);
+    }
+    return parts.length > 0 ? parts.join('\n') : undefined;
+  }, [settings.systemPrompt, settings.memories]);
+
   const handleSend = async (content: string, attachments?: Attachment[]) => {
     if (!settings.apiKey) {
       toggleSettings();
@@ -167,7 +176,7 @@ export function ChatInterface() {
         selectedModel,
         settings.temperature,
         settings.maxTokens,
-        settings.systemPrompt || undefined
+        getSystemPrompt()
       )) {
         if (abortControllerRef.current?.signal.aborted) break;
 

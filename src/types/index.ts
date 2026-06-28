@@ -56,6 +56,7 @@ export interface Settings {
   temperature: number;
   maxTokens: number;
   systemPrompt: string;
+  memories: string[];
 }
 
 // Mistral API types

@@ -1,7 +1,7 @@
 'use client';
 
 import { useChat } from '@/context/ChatContext';
-import { X, Save, ExternalLink, Eye, EyeOff } from 'lucide-react';
+import { X, Save, ExternalLink, Eye, EyeOff, Plus, Trash2, Brain } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { MistralModel, MISTRAL_MODELS } from '@/types';
 
@@ -9,6 +9,7 @@ export function SettingsPanel() {
   const { settings, updateSettings, settingsOpen, toggleSettings } = useChat();
   const [localSettings, setLocalSettings] = useState(settings);
   const [showApiKey, setShowApiKey] = useState(false);
+  const [newMemory, setNewMemory] = useState('');
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -190,6 +191,85 @@ export function SettingsPanel() {
               rows={3}
               className="input resize-none hover:border-[var(--muted-foreground)] focus:border-[var(--primary)] focus:shadow-[0_0_0_3px_rgba(217,119,6,0.08)] transition-all duration-200"
             />
+          </div>
+
+          {/* Memory */}
+          <div className="animate-slide-up" style={{ animationDelay: '300ms' }}>
+            <div className="flex items-center gap-2 mb-2">
+              <Brain size={16} className="text-[var(--primary)]" />
+              <label className="text-sm font-semibold text-[var(--foreground)]">
+                Memory
+              </label>
+              <span className="text-[var(--muted-foreground)] font-normal text-xs">
+                Facts the AI remembers across all chats
+              </span>
+            </div>
+            
+            {/* Add new memory */}
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={newMemory}
+                onChange={(e) => setNewMemory(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newMemory.trim()) {
+                    setLocalSettings((prev) => ({
+                      ...prev,
+                      memories: [...prev.memories, newMemory.trim()],
+                    }));
+                    setNewMemory('');
+                  }
+                }}
+                placeholder="e.g. I'm a software developer, I prefer concise answers..."
+                className="input flex-1 text-sm"
+              />
+              <button
+                onClick={() => {
+                  if (newMemory.trim()) {
+                    setLocalSettings((prev) => ({
+                      ...prev,
+                      memories: [...prev.memories, newMemory.trim()],
+                    }));
+                    setNewMemory('');
+                  }
+                }}
+                disabled={!newMemory.trim()}
+                className="flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--primary)] text-white disabled:opacity-30 hover:opacity-90 transition-all duration-200 active:scale-95 flex-shrink-0"
+                title="Add memory"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+
+            {/* Memory list */}
+            {localSettings.memories.length > 0 ? (
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {localSettings.memories.map((memory, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 px-3 py-2 bg-[var(--muted)] rounded-lg text-sm group"
+                  >
+                    <span className="flex-1 text-[var(--foreground)]">{memory}</span>
+                    <button
+                      onClick={() => {
+                        setLocalSettings((prev) => ({
+                          ...prev,
+                          memories: prev.memories.filter((_, i) => i !== index),
+                        }));
+                      }}
+                      className="flex items-center justify-center w-6 h-6 rounded hover:bg-red-500/10 text-[var(--muted-foreground)] hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 active:scale-90"
+                      title="Remove"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-[var(--muted-foreground)] italic px-1">
+                No memories yet. Add facts about yourself so the AI remembers your preferences across chats.
+              </p>
+            )}
           </div>
         </div>
 
