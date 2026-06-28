@@ -349,19 +349,20 @@ export function Sidebar() {
               </p>
               <div className="space-y-1">
                 {[
-                  { name: 'Word Counter', desc: 'Count words & characters', icon: '📝' },
-                  { name: 'Case Converter', desc: 'UPPER, lower, Title', icon: '🔄' },
-                  { name: 'QR Generator', desc: 'Create QR codes', icon: '📱' },
-                  { name: 'Image to PDF', desc: 'Convert images to PDF', icon: '🖼️' },
-                  { name: 'Text Diff', desc: 'Compare two texts', icon: '🔍' },
-                  { name: 'Lorem Ipsum', desc: 'Generate placeholder text', icon: '📄' },
-                  { name: 'Color Picker', desc: 'Pick colors & codes', icon: '🎨' },
+                  { id: 'word-counter', name: 'Word Counter', desc: 'Count words & characters', icon: '📝' },
+                  { id: 'case-converter', name: 'Case Converter', desc: 'UPPER, lower, Title', icon: '🔄' },
+                  { id: 'json-formatter', name: 'JSON Formatter', desc: 'Format & validate JSON', icon: '{ }' },
+                  { id: 'base64', name: 'Base64', desc: 'Encode & decode', icon: '🔐' },
+                  { id: 'hash-generator', name: 'Hash Generator', desc: 'MD5, SHA-256', icon: '#️⃣' },
+                  { id: 'uuid-generator', name: 'UUID Generator', desc: 'Generate UUIDs', icon: '🆔' },
+                  { id: 'image-to-pdf', name: 'Image to PDF', desc: 'Convert images to PDF', icon: '🖼️' },
+                  { id: 'color-picker', name: 'Color Picker', desc: 'Pick colors & codes', icon: '🎨' },
                 ].map((tool) => (
                   <button
-                    key={tool.name}
+                    key={tool.id}
                     onClick={() => {
                       setCurrentChat(null);
-                      window.dispatchEvent(new CustomEvent('select-tool', { detail: tool.name }));
+                      window.dispatchEvent(new CustomEvent('select-tool', { detail: tool.id }));
                     }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[var(--foreground)] hover:bg-[var(--muted)] transition-all duration-150 text-left"
                   >
