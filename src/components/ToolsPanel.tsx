@@ -447,27 +447,29 @@ function ImageToPDF() {
   };
 
   return (
-    <div className="max-w-2xl space-y-4">
-      <div
-        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-        onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFiles(e.dataTransfer.files); }}
-        className="border-2 border-dashed border-[var(--border)] rounded-xl p-8 text-center hover:border-[var(--primary)] transition-colors cursor-pointer"
-        onClick={() => {
-          const input = document.createElement('input');
-          input.type = 'file';
-          input.multiple = true;
-          input.accept = 'image/*';
-          input.onchange = (e) => {
-            const files = (e.target as HTMLInputElement).files;
-            if (files) handleFiles(files);
-          };
-          input.click();
-        }}
-      >
-        <div className="text-3xl mb-2">🖼️</div>
-        <p className="text-sm font-medium text-[var(--foreground)]">Drop images here or click to upload</p>
-        <p className="text-[10px] text-[var(--muted-foreground)] mt-1">Supports JPG, PNG, GIF, WebP</p>
-      </div>
+    <div className="flex gap-4 h-full">
+      {/* Left side - Upload & Image List */}
+      <div className={`space-y-4 ${pdfBlobUrl ? 'w-1/2' : 'w-full max-w-2xl'}`}>
+        <div
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFiles(e.dataTransfer.files); }}
+          className="border-2 border-dashed border-[var(--border)] rounded-xl p-8 text-center hover:border-[var(--primary)] transition-colors cursor-pointer"
+          onClick={() => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.accept = 'image/*';
+            input.onchange = (e) => {
+              const files = (e.target as HTMLInputElement).files;
+              if (files) handleFiles(files);
+            };
+            input.click();
+          }}
+        >
+          <div className="text-3xl mb-2">🖼️</div>
+          <p className="text-sm font-medium text-[var(--foreground)]">Drop images here or click to upload</p>
+          <p className="text-[10px] text-[var(--muted-foreground)] mt-1">Supports JPG, PNG, GIF, WebP</p>
+        </div>
 
       {images.length > 0 && (
         <>
@@ -514,9 +516,10 @@ function ImageToPDF() {
           </button>
         </>
       )}
+      </div>
 
       {pdfBlobUrl && (
-        <div className="border border-[var(--border)] rounded-xl overflow-hidden">
+        <div className="w-1/2 border border-[var(--border)] rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2 bg-[var(--muted)] border-b border-[var(--border)]">
             <p className="text-sm font-medium text-[var(--foreground)]">{pdfFileName}</p>
             <button
