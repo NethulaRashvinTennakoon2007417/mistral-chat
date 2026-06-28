@@ -14,6 +14,8 @@ interface ChatContextType {
   sidebarCollapsed: boolean;
   settingsOpen: boolean;
   documentAttachment: Attachment | null;
+  canvasOpen: boolean;
+  toggleCanvas: () => void;
   createNewChat: (model?: MistralModel) => Chat;
   setCurrentChat: (chat: Chat | null) => void;
   updateChat: (chat: Chat | ((prev: Chat | null) => Chat | null)) => void;
@@ -63,6 +65,7 @@ Be helpful, concise, and friendly. When users attach files, reference and use th
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [documentAttachment, setDocumentAttachment] = useState<Attachment | null>(null);
+  const [canvasOpen, setCanvasOpen] = useState(false);
 
   // Use refs for values needed in callbacks to avoid stale closures
   const currentChatRef = useRef<Chat | null>(null);
@@ -235,10 +238,16 @@ Be helpful, concise, and friendly. When users attach files, reference and use th
 
   const openDocument = useCallback((attachment: Attachment) => {
     setDocumentAttachment(attachment);
+    setCanvasOpen(true);
   }, []);
 
   const closeDocument = useCallback(() => {
     setDocumentAttachment(null);
+    setCanvasOpen(false);
+  }, []);
+
+  const toggleCanvas = useCallback(() => {
+    setCanvasOpen((prev) => !prev);
   }, []);
 
   return (
@@ -252,6 +261,7 @@ Be helpful, concise, and friendly. When users attach files, reference and use th
         sidebarCollapsed,
         settingsOpen,
         documentAttachment,
+        canvasOpen,
         createNewChat,
         setCurrentChat,
         updateChat,
@@ -265,6 +275,7 @@ Be helpful, concise, and friendly. When users attach files, reference and use th
         toggleSettings,
         openDocument,
         closeDocument,
+        toggleCanvas,
       }}
     >
       {children}

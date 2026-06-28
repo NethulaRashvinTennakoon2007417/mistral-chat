@@ -37,8 +37,10 @@ export function ChatInterface() {
     createNewChat,
     toggleSettings,
     documentAttachment,
+    canvasOpen,
     openDocument,
     closeDocument,
+    toggleCanvas,
   } = useChat();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -409,8 +411,8 @@ export function ChatInterface() {
                     selectedModel={currentChat?.model || 'auto'}
                     onSelectModel={handleModelChange}
                     resolvedModel={resolvedModel}
-                    showCanvas={!!documentAttachment}
-                    onToggleCanvas={() => documentAttachment ? closeDocument() : undefined}
+                    showCanvas={canvasOpen}
+                    onToggleCanvas={toggleCanvas}
                   />
                 </div>
 
@@ -446,8 +448,8 @@ export function ChatInterface() {
               selectedModel={currentChat?.model || 'auto'}
               onSelectModel={handleModelChange}
               resolvedModel={resolvedModel}
-              showCanvas={!!documentAttachment}
-              onToggleCanvas={() => documentAttachment ? closeDocument() : undefined}
+              showCanvas={canvasOpen}
+              onToggleCanvas={toggleCanvas}
             />
           </div>
         </div>
@@ -455,7 +457,7 @@ export function ChatInterface() {
       </div>
 
       {/* Document Viewer Panel */}
-      {documentAttachment && (
+      {documentAttachment && canvasOpen && (
         <div className="w-[55%] flex-shrink-0">
           <DocumentViewer
             title={documentAttachment.name}
