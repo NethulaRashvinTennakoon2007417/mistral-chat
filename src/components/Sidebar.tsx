@@ -6,7 +6,7 @@ import { Plus, MessageSquare, Trash2, Settings, Moon, Sun, Coffee, Sparkles, Pen
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Chat } from '@/types';
 
-type Theme = 'light' | 'dark' | 'cream';
+type Theme = 'dark' | 'cream';
 type ActiveTab = 'chat' | 'documents';
 
 function groupChatsByTime(chats: Chat[]) {
@@ -99,7 +99,7 @@ function ChatItem({ chat, isActive, editingId, editTitle, editInputRef, onSelect
 
 export function Sidebar() {
   const { chats, currentChat, createNewChat, setCurrentChat, removeChat, updateChat, sidebarOpen, toggleSidebar, toggleSettings } = useChat();
-  const [theme, setTheme] = useState<Theme>('light');
+  const [theme, setTheme] = useState<Theme>('dark');
   const [activeTab, setActiveTab] = useState<ActiveTab>('chat');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -109,10 +109,10 @@ export function Sidebar() {
 
   useEffect(() => {
     const saved = localStorage.getItem('theme') as Theme | null;
-    if (saved && ['light', 'dark', 'cream'].includes(saved)) {
+    if (saved && ['dark', 'cream'].includes(saved)) {
       setTheme(saved);
-      document.documentElement.className = saved === 'dark' ? 'dark' : saved === 'cream' ? 'cream' : '';
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.className = saved;
+    } else {
       setTheme('dark');
       document.documentElement.className = 'dark';
     }
@@ -126,13 +126,13 @@ export function Sidebar() {
   }, [editingId]);
 
   const cycleTheme = () => {
-    const next: Theme = theme === 'light' ? 'dark' : theme === 'dark' ? 'cream' : 'light';
+    const next: Theme = theme === 'dark' ? 'cream' : 'dark';
     setTheme(next);
-    document.documentElement.className = next === 'dark' ? 'dark' : next === 'cream' ? 'cream' : '';
+    document.documentElement.className = next;
     localStorage.setItem('theme', next);
   };
 
-  const ThemeIcon = theme === 'dark' ? Moon : theme === 'cream' ? Coffee : Sun;
+  const ThemeIcon = theme === 'dark' ? Moon : Coffee;
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
