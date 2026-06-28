@@ -455,6 +455,9 @@ export function ChatInterface() {
                     </button>
                   ))}
                 </div>
+                <p className="text-center text-xs text-[var(--muted-foreground)] mt-4 opacity-50">
+                  AI can make mistakes. Please verify important information.
+                </p>
               </div>
             </div>
           )}
