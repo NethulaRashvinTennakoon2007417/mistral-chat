@@ -2,12 +2,12 @@
 
 import { useChat } from '@/context/ChatContext';
 import { stripMarkdown } from '@/lib/utils';
-import { Plus, MessageSquare, Trash2, Settings, Moon, Coffee, Sparkles, Pencil, FileText, Search } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, Settings, Moon, Coffee, Sparkles, Pencil, FileText, Search, Wrench } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Chat, Attachment } from '@/types';
 
 type Theme = 'dark' | 'cream';
-type ActiveTab = 'chat' | 'documents';
+type ActiveTab = 'chat' | 'documents' | 'tools';
 
 function groupChatsByTime(chats: Chat[]) {
   const now = new Date();
@@ -208,7 +208,7 @@ export function Sidebar() {
           transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
-        {/* Tabs - Chat / Documents */}
+        {/* Tabs - Chat / Documents / Tools */}
         <div className="flex items-center gap-1 px-3 pt-3 pb-2">
           <button
             onClick={() => setActiveTab('chat')}
@@ -230,7 +230,18 @@ export function Sidebar() {
             }`}
           >
             <FileText size={14} />
-            Documents
+            Docs
+          </button>
+          <button
+            onClick={() => setActiveTab('tools')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+              activeTab === 'tools'
+                ? 'bg-[var(--muted)] text-[var(--foreground)]'
+                : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]'
+            }`}
+          >
+            <Wrench size={14} />
+            Tools
           </button>
         </div>
 
@@ -257,7 +268,7 @@ export function Sidebar() {
 
         {/* Chat List */}
         <div className="flex-1 overflow-y-auto px-3 pt-2">
-          {activeTab === 'chat' ? (
+          {activeTab === 'chat' && (
             chats.length === 0 ? (
               <div className="text-center py-16 px-4">
                 <div className="w-10 h-10 rounded-xl bg-[var(--muted)] flex items-center justify-center mx-auto mb-3">
@@ -292,7 +303,9 @@ export function Sidebar() {
                 </div>
               </div>
             )
-          ) : (
+          )}
+
+          {activeTab === 'documents' && (
             allDocuments.length === 0 ? (
               <div className="text-center py-16 px-4">
                 <div className="w-10 h-10 rounded-xl bg-[var(--muted)] flex items-center justify-center mx-auto mb-3">
@@ -327,6 +340,39 @@ export function Sidebar() {
                 </div>
               </div>
             )
+          )}
+
+          {activeTab === 'tools' && (
+            <div className="py-2">
+              <p className="text-[11px] font-medium text-[var(--muted-foreground)] mb-2">
+                Quick Tools
+              </p>
+              <div className="space-y-1">
+                {[
+                  { name: 'Word Counter', desc: 'Count words & characters', icon: '📝' },
+                  { name: 'Case Converter', desc: 'UPPER, lower, Title', icon: '🔄' },
+                  { name: 'QR Generator', desc: 'Create QR codes', icon: '📱' },
+                  { name: 'Text Diff', desc: 'Compare two texts', icon: '🔍' },
+                  { name: 'Lorem Ipsum', desc: 'Generate placeholder text', icon: '📄' },
+                  { name: 'Color Picker', desc: 'Pick colors & codes', icon: '🎨' },
+                ].map((tool) => (
+                  <button
+                    key={tool.name}
+                    onClick={() => {
+                      setCurrentChat(null);
+                      window.dispatchEvent(new CustomEvent('select-tool', { detail: tool.name }));
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[var(--foreground)] hover:bg-[var(--muted)] transition-all duration-150 text-left"
+                  >
+                    <span className="text-base">{tool.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{tool.name}</p>
+                      <p className="text-[10px] text-[var(--muted-foreground)]">{tool.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 

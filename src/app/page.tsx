@@ -4,10 +4,19 @@ import { ChatProvider, useChat } from '@/context/ChatContext';
 import { Sidebar } from '@/components/Sidebar';
 import { ChatInterface } from '@/components/ChatInterface';
 import { SettingsPanel } from '@/components/SettingsPanel';
+import { ToolsPanel } from '@/components/ToolsPanel';
 import { MessageSquare, Zap, Shield, Globe, ChevronRight, Sparkles, Heart, Users, Lock } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 function AppContent() {
   const { currentChat, sidebarOpen, chats, createNewChat, setCurrentChat } = useChat();
+  const [selectedTool, setSelectedTool] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handler = (e: CustomEvent) => setSelectedTool(e.detail as string);
+    window.addEventListener('select-tool', handler as EventListener);
+    return () => window.removeEventListener('select-tool', handler as EventListener);
+  }, []);
 
   // Show chat interface if there's a current chat
   if (currentChat) {
@@ -16,6 +25,19 @@ function AppContent() {
         <Sidebar />
         <div className={`flex-1 flex flex-col transition-all duration-300 ease-out ${sidebarOpen ? 'ml-[296px]' : 'ml-0'}`}>
           <ChatInterface />
+        </div>
+        <SettingsPanel />
+      </div>
+    );
+  }
+
+  // Show tools panel if a tool is selected
+  if (selectedTool) {
+    return (
+      <div className="flex h-screen bg-[var(--background)]">
+        <Sidebar />
+        <div className={`flex-1 flex flex-col transition-all duration-300 ease-out ${sidebarOpen ? 'ml-[296px]' : 'ml-0'}`}>
+          <ToolsPanel initialTool={selectedTool as any} onBack={() => setSelectedTool(null)} />
         </div>
         <SettingsPanel />
       </div>
