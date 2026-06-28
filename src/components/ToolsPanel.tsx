@@ -66,7 +66,7 @@ export function ToolsPanel({ initialTool, onBack }: ToolsPanelProps) {
         </button>
         <h2 className="text-lg font-bold text-[var(--foreground)]">{selectedTool}</h2>
       </div>
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 flex flex-col min-h-0">
         {selectedTool === 'Word Counter' && <WordCounter />}
         {selectedTool === 'Case Converter' && <CaseConverter />}
         {selectedTool === 'QR Generator' && <QRGenerator />}
@@ -447,7 +447,7 @@ function ImageToPDF() {
   };
 
   return (
-    <div className="flex gap-4 h-full">
+    <div className="flex gap-4 flex-1 min-h-0">
       {/* Left side - Upload & Image List */}
       <div className={`space-y-4 ${pdfBlobUrl ? 'w-1/2' : 'w-full max-w-2xl'}`}>
         <div
