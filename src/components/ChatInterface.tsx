@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useChat } from '@/context/ChatContext';
 import { Message } from '@/components/Message';
 import { ChatInput } from '@/components/ChatInput';
@@ -56,7 +56,12 @@ export function ChatInterface() {
     currentChatRef.current = currentChat;
   }, [currentChat]);
 
+  const lastScrollTime = useRef(0);
+
   const scrollToBottom = useCallback(() => {
+    const now = Date.now();
+    if (now - lastScrollTime.current < 100) return;
+    lastScrollTime.current = now;
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
@@ -141,6 +146,20 @@ export function ChatInterface() {
     try {
       const apiMessages: MessageType[] = [...chat.messages, userMsg];
       let responseContent = '';
+      let lastFlushTime = 0;
+      let rafId: number | null = null;
+      const FLUSH_INTERVAL = 50;
+
+      const flushToState = () => {
+        updateChat((prev) => {
+          if (!prev) return prev;
+          const updatedMessages = prev.messages.map((msg) =>
+            msg.id === assistantMsgId ? { ...msg, content: responseContent } : msg
+          );
+          return { ...prev, messages: updatedMessages, updatedAt: new Date() };
+        });
+        lastFlushTime = Date.now();
+      };
 
       for await (const chunk of streamChatCompletion(
         settings.apiKey,
@@ -154,14 +173,20 @@ export function ChatInterface() {
 
         responseContent += chunk;
 
-        updateChat((prev) => {
-          if (!prev) return prev;
-          const updatedMessages = prev.messages.map((msg) =>
-            msg.id === assistantMsgId ? { ...msg, content: responseContent } : msg
-          );
-          return { ...prev, messages: updatedMessages, updatedAt: new Date() };
-        });
+        const now = Date.now();
+        if (now - lastFlushTime >= FLUSH_INTERVAL) {
+          flushToState();
+        } else if (!rafId) {
+          rafId = requestAnimationFrame(() => {
+            flushToState();
+            rafId = null;
+          });
+        }
       }
+
+      // Final flush
+      if (rafId) cancelAnimationFrame(rafId);
+      flushToState();
 
       if (!responseContent) {
         const errorMsg: MessageType = {
@@ -209,7 +234,7 @@ export function ChatInterface() {
     streamingChatRef.current = null;
   };
 
-  const handleRetry = () => {
+  const handleRetry = useCallback(() => {
     const chat = currentChatRef.current;
     if (!chat || chat.messages.length < 2) return;
 
@@ -235,9 +260,38 @@ export function ChatInterface() {
     setTimeout(() => {
       handleSend(lastUserMessage!.content, lastUserMessage!.attachments);
     }, 50);
-  };
+  }, [updateChat]);
 
-  const handleEditMessage = (messageId: string, content: string) => {
+  const handleShare = useCallback(async () => {
+    if (!currentChat) return;
+    const shareData = {
+      title: currentChat.title,
+      messages: currentChat.messages.map((m) => ({ role: m.role, content: m.content })),
+    };
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(shareData, null, 2));
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = JSON.stringify(shareData, null, 2);
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+    setCopiedShare(true);
+    setTimeout(() => setCopiedShare(false), 2000);
+  }, [currentChat]);
+
+  const handleModelChange = useCallback((model: MistralModel) => {
+    if (!currentChat) return;
+    updateChat({ ...currentChat, model });
+  }, [currentChat, updateChat]);
+
+  const handlePromptCategory = useCallback((prompt: string) => {
+    handleSend(prompt);
+  }, []);
+
+  const handleEditMessage = useCallback((messageId: string, content: string) => {
     const chat = currentChatRef.current;
     if (!chat) return;
 
@@ -261,36 +315,7 @@ export function ChatInterface() {
       );
       updateChat({ ...chat, messages: updatedMessages });
     }
-  };
-
-  const handleShare = async () => {
-    if (!currentChat) return;
-    const shareData = {
-      title: currentChat.title,
-      messages: currentChat.messages.map((m) => ({ role: m.role, content: m.content })),
-    };
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(shareData, null, 2));
-    } catch {
-      const textarea = document.createElement('textarea');
-      textarea.value = JSON.stringify(shareData, null, 2);
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-    }
-    setCopiedShare(true);
-    setTimeout(() => setCopiedShare(false), 2000);
-  };
-
-  const handleModelChange = (model: MistralModel) => {
-    if (!currentChat) return;
-    updateChat({ ...currentChat, model });
-  };
-
-  const handlePromptCategory = (prompt: string) => {
-    handleSend(prompt);
-  };
+  }, [updateChat]);
 
   const hasMessages = currentChat && currentChat.messages.length > 0;
 

@@ -2,7 +2,7 @@
 
 import { Message as MessageType } from '@/types';
 import { Copy, Check, RotateCcw, Edit2, ThumbsUp, ThumbsDown, Volume2, VolumeX, Sparkles, FileText, Image as ImageIcon } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -16,7 +16,7 @@ interface MessageProps {
   onOpenDocument?: (attachment: { id: string; name: string; type: string; size: number; url?: string; content?: string; extractedText?: string }) => void;
 }
 
-export function Message({ message, isLatest, isStreaming, onRetry, onEdit, onOpenDocument }: MessageProps) {
+export const Message = memo(function Message({ message, isLatest, isStreaming, onRetry, onEdit, onOpenDocument }: MessageProps) {
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
@@ -295,4 +295,4 @@ export function Message({ message, isLatest, isStreaming, onRetry, onEdit, onOpe
       </div>
     </div>
   );
-}
+});
