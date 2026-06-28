@@ -119,9 +119,9 @@ export function detectModel(
     return 'pixtral-large-latest';
   }
 
-  // PDF attachments → large model (better at long text extraction)
+  // PDF attachments → small model (text is pre-extracted, no need for large model)
   if (hasPdfAttachments(attachments)) {
-    return 'mistral-large-latest';
+    return 'mistral-small-latest';
   }
 
   // Check if user is asking to change the model
