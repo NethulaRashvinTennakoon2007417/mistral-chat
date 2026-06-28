@@ -940,6 +940,9 @@ function ImageToPDF() {
   const [processing, setProcessing] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [pdfFileName, setPdfFileName] = useState('images.pdf');
+  const [pageSize, setPageSize] = useState<'fit' | 'a4' | 'letter'>('fit');
+  const [orientation, setOrientation] = useState<'auto' | 'portrait' | 'landscape'>('auto');
+  const [margin, setMargin] = useState<'none' | 'small' | 'large'>('none');
 
   const handleFiles = async (files: FileList) => {
     const newImages: { name: string; url: string; width: number; height: number }[] = [];
@@ -964,22 +967,72 @@ function ImageToPDF() {
     setImages((prev) => { const arr = [...prev]; const [item] = arr.splice(from, 1); arr.splice(to, 0, item); return arr; });
   };
 
+  const marginPx = margin === 'small' ? 20 : margin === 'large' ? 50 : 0;
+
   const generatePDF = async () => {
     if (images.length === 0) return;
     setProcessing(true);
     try {
       const { jsPDF } = await import('jspdf');
-      const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: 'a4' });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      for (let i = 0; i < images.length; i++) {
-        if (i > 0) pdf.addPage();
-        const img = images[i];
-        const ratio = Math.min(pageW / img.width, pageH / img.height);
+
+      const firstImg = images[0];
+      let firstW: number, firstH: number, firstOrientation: 'portrait' | 'landscape';
+
+      if (pageSize === 'fit') {
+        firstW = firstImg.width + marginPx * 2;
+        firstH = firstImg.height + marginPx * 2;
+        firstOrientation = firstImg.width >= firstImg.height ? 'landscape' : 'portrait';
+      } else {
+        const fmt = pageSize === 'a4' ? 'a4' : 'letter';
+        if (orientation === 'auto') {
+          firstOrientation = firstImg.width >= firstImg.height ? 'landscape' : 'portrait';
+        } else {
+          firstOrientation = orientation;
+        }
+        const tempPdf = new jsPDF({ orientation: firstOrientation, unit: 'px', format: fmt });
+        firstW = tempPdf.internal.pageSize.getWidth();
+        firstH = tempPdf.internal.pageSize.getHeight();
+      }
+
+      const pdf = new jsPDF({ orientation: firstOrientation, unit: 'px', format: [firstW, firstH] });
+
+      const addImageToPage = (img: { url: string; width: number; height: number }, pw: number, ph: number) => {
+        const usableW = pw - marginPx * 2;
+        const usableH = ph - marginPx * 2;
+        const ratio = Math.min(usableW / img.width, usableH / img.height);
         const w = img.width * ratio;
         const h = img.height * ratio;
-        pdf.addImage(img.url, 'JPEG', (pageW - w) / 2, (pageH - h) / 2, w, h);
+        const x = marginPx + (usableW - w) / 2;
+        const y = marginPx + (usableH - h) / 2;
+        pdf.addImage(img.url, 'JPEG', x, y, w, h);
+      };
+
+      addImageToPage(firstImg, firstW, firstH);
+
+      for (let i = 1; i < images.length; i++) {
+        const img = images[i];
+        let pw: number, ph: number, pgOrientation: 'portrait' | 'landscape';
+
+        if (pageSize === 'fit') {
+          pw = img.width + marginPx * 2;
+          ph = img.height + marginPx * 2;
+          pgOrientation = img.width >= img.height ? 'landscape' : 'portrait';
+        } else {
+          const fmt = pageSize === 'a4' ? 'a4' : 'letter';
+          if (orientation === 'auto') {
+            pgOrientation = img.width >= img.height ? 'landscape' : 'portrait';
+          } else {
+            pgOrientation = orientation;
+          }
+          const tempPdf = new jsPDF({ orientation: pgOrientation, unit: 'px', format: fmt });
+          pw = tempPdf.internal.pageSize.getWidth();
+          ph = tempPdf.internal.pageSize.getHeight();
+        }
+
+        pdf.addPage([pw, ph], pgOrientation);
+        addImageToPage(img, pw, ph);
       }
+
       const blob = pdf.output('blob');
       const url = URL.createObjectURL(blob);
       if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
@@ -996,6 +1049,15 @@ function ImageToPDF() {
     a.download = pdfFileName;
     a.click();
   };
+
+  const ToggleButton = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${active ? 'bg-[var(--primary)] text-white' : 'bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--border)]'}`}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <div className="flex gap-4 flex-1 min-h-0">
@@ -1017,6 +1079,34 @@ function ImageToPDF() {
           <p className="text-sm font-medium text-[var(--foreground)]">Drop images here or click to upload</p>
           <p className="text-[10px] text-[var(--muted-foreground)] mt-1">Supports JPG, PNG, GIF, WebP</p>
         </div>
+
+        <div className="space-y-3 bg-[var(--card)] border border-[var(--border)] rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-[var(--muted-foreground)] w-16 uppercase tracking-wide">Page Size</span>
+            <div className="flex items-center gap-1">
+              <ToggleButton label="Fit image" active={pageSize === 'fit'} onClick={() => setPageSize('fit')} />
+              <ToggleButton label="A4" active={pageSize === 'a4'} onClick={() => setPageSize('a4')} />
+              <ToggleButton label="Letter" active={pageSize === 'letter'} onClick={() => setPageSize('letter')} />
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-[var(--muted-foreground)] w-16 uppercase tracking-wide">Orientation</span>
+            <div className="flex items-center gap-1">
+              <ToggleButton label="Auto" active={orientation === 'auto'} onClick={() => setOrientation('auto')} />
+              <ToggleButton label="Portrait" active={orientation === 'portrait'} onClick={() => setOrientation('portrait')} />
+              <ToggleButton label="Landscape" active={orientation === 'landscape'} onClick={() => setOrientation('landscape')} />
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-[var(--muted-foreground)] w-16 uppercase tracking-wide">Margin</span>
+            <div className="flex items-center gap-1">
+              <ToggleButton label="None" active={margin === 'none'} onClick={() => setMargin('none')} />
+              <ToggleButton label="Small" active={margin === 'small'} onClick={() => setMargin('small')} />
+              <ToggleButton label="Large" active={margin === 'large'} onClick={() => setMargin('large')} />
+            </div>
+          </div>
+        </div>
+
         {images.length > 0 && (
           <>
             <div className="space-y-2">
