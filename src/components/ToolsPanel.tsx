@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Copy, Check, Download, Upload, Trash2, RefreshCw } from 'lucide-react';
 
-type Tool = 'Word Counter' | 'Case Converter' | 'QR Generator' | 'Text Diff' | 'Lorem Ipsum' | 'Color Picker';
+type Tool = 'Word Counter' | 'Case Converter' | 'QR Generator' | 'Text Diff' | 'Lorem Ipsum' | 'Color Picker' | 'Image to PDF';
 
 interface ToolsPanelProps {
   initialTool?: Tool | null;
@@ -38,6 +38,7 @@ export function ToolsPanel({ initialTool, onBack }: ToolsPanelProps) {
             { name: 'Text Diff' as Tool, icon: '🔍', desc: 'Compare two texts' },
             { name: 'Lorem Ipsum' as Tool, icon: '📄', desc: 'Placeholder text' },
             { name: 'Color Picker' as Tool, icon: '🎨', desc: 'Pick colors' },
+            { name: 'Image to PDF' as Tool, icon: '🖼️', desc: 'Convert images to PDF' },
           ].map((tool) => (
             <button
               key={tool.name}
@@ -72,6 +73,7 @@ export function ToolsPanel({ initialTool, onBack }: ToolsPanelProps) {
         {selectedTool === 'Text Diff' && <TextDiff />}
         {selectedTool === 'Lorem Ipsum' && <LoremIpsum />}
         {selectedTool === 'Color Picker' && <ColorPicker />}
+        {selectedTool === 'Image to PDF' && <ImageToPDF />}
       </div>
     </div>
   );
@@ -363,6 +365,141 @@ function ColorPicker() {
         className="w-full h-32 rounded-xl border border-[var(--border)]"
         style={{ backgroundColor: color }}
       />
+    </div>
+  );
+}
+
+function ImageToPDF() {
+  const [images, setImages] = useState<{ name: string; url: string; width: number; height: number }[]>([]);
+  const [processing, setProcessing] = useState(false);
+
+  const handleFiles = async (files: FileList) => {
+    const newImages: { name: string; url: string; width: number; height: number }[] = [];
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('image/')) continue;
+      const url = URL.createObjectURL(file);
+      const img = await new Promise<HTMLImageElement>((resolve) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.src = url;
+      });
+      newImages.push({ name: file.name, url, width: img.width, height: img.height });
+    }
+    setImages((prev) => [...prev, ...newImages]);
+  };
+
+  const removeImage = (index: number) => {
+    setImages((prev) => {
+      URL.revokeObjectURL(prev[index].url);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const moveImage = (from: number, to: number) => {
+    setImages((prev) => {
+      const arr = [...prev];
+      const [item] = arr.splice(from, 1);
+      arr.splice(to, 0, item);
+      return arr;
+    });
+  };
+
+  const generatePDF = async () => {
+    if (images.length === 0) return;
+    setProcessing(true);
+    try {
+      const { jsPDF } = await import('jspdf');
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: 'a4' });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+
+      for (let i = 0; i < images.length; i++) {
+        if (i > 0) pdf.addPage();
+        const img = images[i];
+        const ratio = Math.min(pageW / img.width, pageH / img.height);
+        const w = img.width * ratio;
+        const h = img.height * ratio;
+        const x = (pageW - w) / 2;
+        const y = (pageH - h) / 2;
+        pdf.addImage(img.url, 'JPEG', x, y, w, h);
+      }
+
+      pdf.save('images.pdf');
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl space-y-4">
+      <div
+        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFiles(e.dataTransfer.files); }}
+        className="border-2 border-dashed border-[var(--border)] rounded-xl p-8 text-center hover:border-[var(--primary)] transition-colors cursor-pointer"
+        onClick={() => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.multiple = true;
+          input.accept = 'image/*';
+          input.onchange = (e) => {
+            const files = (e.target as HTMLInputElement).files;
+            if (files) handleFiles(files);
+          };
+          input.click();
+        }}
+      >
+        <div className="text-3xl mb-2">🖼️</div>
+        <p className="text-sm font-medium text-[var(--foreground)]">Drop images here or click to upload</p>
+        <p className="text-[10px] text-[var(--muted-foreground)] mt-1">Supports JPG, PNG, GIF, WebP</p>
+      </div>
+
+      {images.length > 0 && (
+        <>
+          <div className="space-y-2">
+            {images.map((img, i) => (
+              <div key={i} className="flex items-center gap-3 bg-[var(--card)] border border-[var(--border)] rounded-lg p-3">
+                <img src={img.url} alt={img.name} className="w-12 h-12 rounded object-cover" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm truncate text-[var(--foreground)]">{img.name}</p>
+                  <p className="text-[10px] text-[var(--muted-foreground)]">{img.width} × {img.height}px</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => moveImage(i, Math.max(0, i - 1))}
+                    disabled={i === 0}
+                    className="w-7 h-7 rounded flex items-center justify-center hover:bg-[var(--muted)] text-[var(--muted-foreground)] disabled:opacity-30 text-xs"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    onClick={() => moveImage(i, Math.min(images.length - 1, i + 1))}
+                    disabled={i === images.length - 1}
+                    className="w-7 h-7 rounded flex items-center justify-center hover:bg-[var(--muted)] text-[var(--muted-foreground)] disabled:opacity-30 text-xs"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    onClick={() => removeImage(i)}
+                    className="w-7 h-7 rounded flex items-center justify-center hover:bg-red-500/10 text-[var(--muted-foreground)] hover:text-red-500"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={generatePDF}
+            disabled={processing}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[var(--primary)] text-white rounded-xl font-medium hover:opacity-90 transition-all disabled:opacity-50"
+          >
+            {processing ? 'Generating...' : `Generate PDF (${images.length} image${images.length > 1 ? 's' : ''})`}
+          </button>
+        </>
+      )}
     </div>
   );
 }

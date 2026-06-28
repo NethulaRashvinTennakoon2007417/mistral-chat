@@ -352,6 +352,7 @@ export function Sidebar() {
                   { name: 'Word Counter', desc: 'Count words & characters', icon: '📝' },
                   { name: 'Case Converter', desc: 'UPPER, lower, Title', icon: '🔄' },
                   { name: 'QR Generator', desc: 'Create QR codes', icon: '📱' },
+                  { name: 'Image to PDF', desc: 'Convert images to PDF', icon: '🖼️' },
                   { name: 'Text Diff', desc: 'Compare two texts', icon: '🔍' },
                   { name: 'Lorem Ipsum', desc: 'Generate placeholder text', icon: '📄' },
                   { name: 'Color Picker', desc: 'Pick colors & codes', icon: '🎨' },
