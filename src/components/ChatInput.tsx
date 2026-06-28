@@ -31,8 +31,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      const maxHeight = variant === 'centered' ? 200 : 160;
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, maxHeight)}px`;
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [content, variant]);
 
@@ -190,7 +189,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             placeholder="How can I help you today?"
-            className="w-full bg-transparent border-none outline-none resize-none text-[var(--foreground)] placeholder-[var(--muted-foreground)] px-5 pt-5 pb-3 min-h-[60px] max-h-[200px] text-[15px] leading-relaxed"
+            className="w-full bg-transparent border-none outline-none resize-none text-[var(--foreground)] placeholder-[var(--muted-foreground)] px-5 pt-5 pb-3 min-h-[60px] text-[15px] leading-relaxed overflow-hidden"
             rows={1}
             disabled={disabled}
           />
@@ -354,7 +353,7 @@ export function ChatInput({ onSend, onStop, isGenerating, disabled, variant = 'd
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder="How can I help you today?"
-          className="flex-1 bg-transparent border-none outline-none resize-none text-[var(--foreground)] placeholder-[var(--muted-foreground)] py-2.5 min-h-[40px] max-h-[160px] text-[15px] leading-relaxed"
+          className="flex-1 bg-transparent border-none outline-none resize-none text-[var(--foreground)] placeholder-[var(--muted-foreground)] py-2.5 min-h-[40px] text-[15px] leading-relaxed overflow-hidden"
           rows={1}
           disabled={disabled}
         />
