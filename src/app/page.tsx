@@ -7,16 +7,14 @@ import { SettingsPanel } from '@/components/SettingsPanel';
 import { MessageSquare, Zap, Shield, Globe, ChevronRight, Sparkles, Heart, Users, Lock } from 'lucide-react';
 
 function AppContent() {
-  const { currentChat, sidebarOpen, sidebarCollapsed, chats, createNewChat, setCurrentChat } = useChat();
-
-  const sidebarWidth = sidebarCollapsed ? 'ml-[60px]' : 'ml-[260px]';
+  const { currentChat, sidebarOpen, chats, createNewChat, setCurrentChat } = useChat();
 
   // Show chat interface if there's a current chat
   if (currentChat) {
     return (
       <div className="flex h-screen bg-[var(--background)]">
         <Sidebar />
-        <div className={`flex-1 flex flex-col transition-all duration-300 ease-out ${sidebarOpen ? sidebarWidth : 'ml-0'}`}>
+        <div className={`flex-1 flex flex-col transition-all duration-300 ease-out ${sidebarOpen ? 'ml-[296px]' : 'ml-0'}`}>
           <ChatInterface />
         </div>
         <SettingsPanel />

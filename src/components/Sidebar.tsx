@@ -1,12 +1,13 @@
 'use client';
 
 import { useChat } from '@/context/ChatContext';
-import { formatRelativeTime, stripMarkdown } from '@/lib/utils';
-import { Plus, MessageSquare, Trash2, Settings, Moon, Sun, Coffee, Sparkles, Pencil, ChevronLeft, Search } from 'lucide-react';
+import { stripMarkdown } from '@/lib/utils';
+import { Plus, MessageSquare, Trash2, Settings, Moon, Sun, Coffee, Sparkles, Pencil, FileText, Search } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Chat } from '@/types';
 
 type Theme = 'light' | 'dark' | 'cream';
+type ActiveTab = 'chat' | 'documents';
 
 function groupChatsByTime(chats: Chat[]) {
   const now = new Date();
@@ -39,7 +40,6 @@ function groupChatsByTime(chats: Chat[]) {
 interface ChatItemProps {
   chat: Chat;
   isActive: boolean;
-  isCollapsed: boolean;
   editingId: string | null;
   editTitle: string;
   editInputRef: React.RefObject<HTMLInputElement | null>;
@@ -51,23 +51,7 @@ interface ChatItemProps {
   onEditKeyDown: (e: React.KeyboardEvent, id: string) => void;
 }
 
-function ChatItem({ chat, isActive, isCollapsed, editingId, editTitle, editInputRef, onSelect, onDelete, onRenameStart, onRenameSave, onEditTitleChange, onEditKeyDown }: ChatItemProps) {
-  if (isCollapsed) {
-    return (
-      <button
-        onClick={() => onSelect(chat)}
-        className={`w-full flex items-center justify-center w-10 h-10 mx-auto rounded-lg transition-all duration-200 group ${
-          isActive
-            ? 'bg-[var(--accent)] text-[var(--accent-foreground)]'
-            : 'text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]'
-        }`}
-        title={stripMarkdown(chat.title)}
-      >
-        <MessageSquare size={16} />
-      </button>
-    );
-  }
-
+function ChatItem({ chat, isActive, editingId, editTitle, editInputRef, onSelect, onDelete, onRenameStart, onRenameSave, onEditTitleChange, onEditKeyDown }: ChatItemProps) {
   return (
     <div
       className={`group flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer transition-all duration-150 ${
@@ -114,8 +98,9 @@ function ChatItem({ chat, isActive, isCollapsed, editingId, editTitle, editInput
 }
 
 export function Sidebar() {
-  const { chats, currentChat, createNewChat, setCurrentChat, removeChat, updateChat, sidebarOpen, sidebarCollapsed: isCollapsed, toggleSidebarCollapse: setIsCollapsed, toggleSidebar, toggleSettings } = useChat();
+  const { chats, currentChat, createNewChat, setCurrentChat, removeChat, updateChat, sidebarOpen, toggleSidebar, toggleSettings } = useChat();
   const [theme, setTheme] = useState<Theme>('light');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('chat');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const editInputRef = useRef<HTMLInputElement>(null);
@@ -180,8 +165,6 @@ export function Sidebar() {
     if (e.key === 'Escape') setEditingId(null);
   };
 
-  const sidebarWidth = isCollapsed ? 60 : 260;
-
   return (
     <>
       {/* Backdrop on mobile */}
@@ -192,92 +175,82 @@ export function Sidebar() {
         />
       )}
 
+      {/* Sidebar Panel - Claude style floating panel with rounded corners */}
       <div
-        className={`sidebar-panel h-full bg-[var(--background)] border-r border-[var(--border)] flex flex-col fixed left-0 top-0 z-50`}
-        style={{
-          width: sidebarWidth,
-          transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-        }}
+        className={`sidebar-panel fixed left-3 top-3 bottom-3 z-50 bg-[var(--background)] border border-[var(--border)] rounded-2xl shadow-xl flex flex-col transition-all duration-300 ease-out overflow-hidden ${
+          sidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-[calc(100%+12px)] opacity-0 pointer-events-none'
+        }`}
+        style={{ width: 280 }}
       >
-        {/* Header */}
-        <div className={`flex items-center ${isCollapsed ? 'justify-center px-2 py-3' : 'justify-between px-4 py-3'}`}>
-          {!isCollapsed && (
-            <button
-              onClick={() => setCurrentChat(null)}
-              className="flex items-center gap-2.5 hover:opacity-80 transition-all duration-200 active:scale-95"
-            >
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-sm shadow-orange-500/20">
-                <Sparkles size={14} className="text-white" />
-              </div>
-              <span className="text-sm font-semibold text-[var(--foreground)]">Mistral Chat</span>
-            </button>
-          )}
+        {/* Tabs - Chat / Documents */}
+        <div className="flex items-center gap-1 px-3 pt-3 pb-2">
           <button
-            onClick={() => setIsCollapsed()}
-            className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200"
-            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            onClick={() => setActiveTab('chat')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+              activeTab === 'chat'
+                ? 'bg-[var(--muted)] text-[var(--foreground)]'
+                : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]'
+            }`}
           >
-            <ChevronLeft size={16} className={`transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
+            <MessageSquare size={14} />
+            Chat
+          </button>
+          <button
+            onClick={() => setActiveTab('documents')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+              activeTab === 'documents'
+                ? 'bg-[var(--muted)] text-[var(--foreground)]'
+                : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)]'
+            }`}
+          >
+            <FileText size={14} />
+            Documents
           </button>
         </div>
 
-        {/* New Chat */}
-        <div className={`px-3 pt-3 ${isCollapsed ? 'px-2' : ''}`}>
+        {/* Quick Actions */}
+        <div className="px-3 pb-2 space-y-1">
           <button
             onClick={() => createNewChat()}
-            className={`${isCollapsed ? 'w-10 h-10 mx-auto flex items-center justify-center rounded-lg' : 'w-full flex items-center gap-2 px-3 py-2 rounded-lg'} bg-[var(--foreground)] text-[var(--background)] hover:opacity-90 transition-all duration-200 text-sm font-medium active:scale-[0.98]`}
-            title="New Chat"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--muted)] text-[var(--foreground)] transition-all duration-200 text-sm"
           >
-            <Plus size={16} />
-            {!isCollapsed && 'New Chat'}
+            <Plus size={15} />
+            New chat
+          </button>
+          <button
+            onClick={toggleSettings}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--muted)] text-[var(--foreground)] transition-all duration-200 text-sm"
+          >
+            <Settings size={15} />
+            Customize
           </button>
         </div>
 
+        {/* Divider */}
+        <div className="mx-3 border-t border-[var(--border)]" />
+
         {/* Chat List */}
-        <div className={`flex-1 overflow-y-auto ${isCollapsed ? 'px-2 pt-3' : 'px-3 pt-4'}`}>
-          {chats.length === 0 ? (
-            !isCollapsed && (
+        <div className="flex-1 overflow-y-auto px-3 pt-2">
+          {activeTab === 'chat' ? (
+            chats.length === 0 ? (
               <div className="text-center py-16 px-4">
                 <div className="w-10 h-10 rounded-xl bg-[var(--muted)] flex items-center justify-center mx-auto mb-3">
                   <MessageSquare size={18} className="text-[var(--muted-foreground)]" />
                 </div>
                 <p className="text-xs text-[var(--muted-foreground)]">No conversations yet</p>
               </div>
-            )
-          ) : isCollapsed ? (
-            <div className="flex flex-col items-center gap-1">
-              {chats.slice(0, 10).map((chat) => (
-                <ChatItem
-                  key={chat.id}
-                  chat={chat}
-                  isActive={currentChat?.id === chat.id}
-                  isCollapsed
-                  editingId={editingId}
-                  editTitle={editTitle}
-                  editInputRef={editInputRef}
-                  onSelect={setCurrentChat}
-                  onDelete={handleDelete}
-                  onRenameStart={handleRenameStart}
-                  onRenameSave={handleRenameSave}
-                  onEditTitleChange={setEditTitle}
-                  onEditKeyDown={handleRenameKeyDown}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {grouped.map((group) => (
-                <div key={group.label}>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-3 mb-1.5">
-                    {group.label}
-                  </p>
-                  <div className="space-y-0.5">
-                    {group.chats.map((chat) => (
+            ) : (
+              <div>
+                <p className="text-[11px] font-medium text-[var(--muted-foreground)] px-3 mb-1.5">
+                  Recents
+                </p>
+                <div className="space-y-0.5">
+                  {grouped.flatMap((group) =>
+                    group.chats.map((chat) => (
                       <ChatItem
                         key={chat.id}
                         chat={chat}
                         isActive={currentChat?.id === chat.id}
-                        isCollapsed={false}
                         editingId={editingId}
                         editTitle={editTitle}
                         editInputRef={editInputRef}
@@ -288,51 +261,41 @@ export function Sidebar() {
                         onEditTitleChange={setEditTitle}
                         onEditKeyDown={handleRenameKeyDown}
                       />
-                    ))}
-                  </div>
+                    ))
+                  )}
                 </div>
-              ))}
+              </div>
+            )
+          ) : (
+            <div className="text-center py-16 px-4">
+              <div className="w-10 h-10 rounded-xl bg-[var(--muted)] flex items-center justify-center mx-auto mb-3">
+                <FileText size={18} className="text-[var(--muted-foreground)]" />
+              </div>
+              <p className="text-xs text-[var(--muted-foreground)]">Upload a PDF in any chat to view it here</p>
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className={`border-t border-[var(--border)] ${isCollapsed ? 'p-2' : 'p-3'}`}>
-          {isCollapsed ? (
-            <div className="flex flex-col items-center gap-1">
-              <button
-                onClick={cycleTheme}
-                className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200"
-                title={`Theme: ${theme}`}
-              >
-                <ThemeIcon size={16} />
-              </button>
-              <button
-                onClick={toggleSettings}
-                className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200"
-                title="Settings"
-              >
-                <Settings size={16} />
-              </button>
+        {/* Footer - User Profile */}
+        <div className="border-t border-[var(--border)] p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                M
+              </div>
+              <div className="text-sm">
+                <p className="font-medium text-[var(--foreground)]">Mistral Chat</p>
+                <p className="text-[10px] text-[var(--muted-foreground)]">Free</p>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-1">
-              <button
-                onClick={cycleTheme}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 text-sm"
-              >
-                <ThemeIcon size={15} />
-                <span>{theme === 'dark' ? 'Dark' : theme === 'cream' ? 'Cream' : 'Light'} mode</span>
-              </button>
-              <button
-                onClick={toggleSettings}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 text-sm"
-              >
-                <Settings size={15} />
-                <span>Settings</span>
-              </button>
-            </div>
-          )}
+            <button
+              onClick={cycleTheme}
+              className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200"
+              title={`Theme: ${theme}`}
+            >
+              <ThemeIcon size={16} />
+            </button>
+          </div>
         </div>
       </div>
     </>
