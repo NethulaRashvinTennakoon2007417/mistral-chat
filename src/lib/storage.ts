@@ -53,7 +53,20 @@ export function getChats(): Chat[] {
 
 export function saveChats(chats: Chat[]): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(CHATS_KEY, JSON.stringify(chats));
+  // Strip heavy base64 data from PDF attachments before persisting
+  const sanitized = chats.map(chat => ({
+    ...chat,
+    messages: chat.messages.map(msg => ({
+      ...msg,
+      attachments: msg.attachments?.map(att => {
+        if (att.type === 'application/pdf' && att.url?.startsWith('data:')) {
+          return { ...att, url: undefined };
+        }
+        return att;
+      }),
+    })),
+  }));
+  localStorage.setItem(CHATS_KEY, JSON.stringify(sanitized));
 }
 
 export function getChat(id: string): Chat | null {

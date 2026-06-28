@@ -267,6 +267,16 @@ export function DocumentViewer({ title, content, fileName, fileData, onClose }: 
             className="w-full h-full border-none"
             title={title}
           />
+        ) : isPDF && !fileData ? (
+          <div className="flex flex-col items-center justify-center h-full text-center px-8">
+            <div className="w-16 h-16 rounded-2xl bg-[var(--muted)] flex items-center justify-center mb-4">
+              <FileText size={28} className="text-[var(--muted-foreground)]" />
+            </div>
+            <p className="text-sm font-medium text-[var(--foreground)] mb-1">PDF data not available</p>
+            <p className="text-xs text-[var(--muted-foreground)] max-w-[250px]">
+              This PDF was not saved to preserve storage. Re-upload it in the chat to view it here.
+            </p>
+          </div>
         ) : content ? (
           <div
             ref={contentRef}
