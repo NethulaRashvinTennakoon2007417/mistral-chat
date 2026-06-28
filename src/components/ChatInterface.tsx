@@ -89,6 +89,24 @@ export function ChatInterface() {
     return parts.length > 0 ? parts.join('\n') : undefined;
   }, [settings.systemPrompt, settings.memories]);
 
+  const handleCanvasToggle = useCallback(() => {
+    if (documentAttachment) {
+      closeDocument();
+    } else if (currentChat) {
+      // Find the last PDF attachment in the chat
+      for (let i = currentChat.messages.length - 1; i >= 0; i--) {
+        const msg = currentChat.messages[i];
+        if (msg.attachments) {
+          const pdf = msg.attachments.find(a => a.type === 'application/pdf');
+          if (pdf) {
+            openDocument(pdf);
+            return;
+          }
+        }
+      }
+    }
+  }, [documentAttachment, currentChat, closeDocument, openDocument]);
+
   const handleSend = async (content: string, attachments?: Attachment[]) => {
     if (!settings.apiKey) {
       toggleSettings();
@@ -446,7 +464,7 @@ export function ChatInterface() {
                     onSelectModel={handleModelChange}
                     resolvedModel={resolvedModel}
                     showCanvas={canvasOpen}
-                    onToggleCanvas={toggleCanvas}
+                    onToggleCanvas={handleCanvasToggle}
                   />
                 </div>
 
@@ -486,7 +504,7 @@ export function ChatInterface() {
               onSelectModel={handleModelChange}
               resolvedModel={resolvedModel}
               showCanvas={canvasOpen}
-              onToggleCanvas={toggleCanvas}
+              onToggleCanvas={handleCanvasToggle}
             />
           </div>
         </div>
