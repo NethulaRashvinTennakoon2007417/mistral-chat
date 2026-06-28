@@ -449,7 +449,7 @@ function ImageToPDF() {
   return (
     <div className="flex gap-4 flex-1 min-h-0">
       {/* Left side - Upload & Image List */}
-      <div className={`space-y-4 ${pdfBlobUrl ? 'w-1/2' : 'w-full max-w-2xl'}`}>
+      <div className={`space-y-4 ${pdfBlobUrl ? 'w-1/3' : 'w-full max-w-2xl'}`}>
         <div
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFiles(e.dataTransfer.files); }}
@@ -519,7 +519,7 @@ function ImageToPDF() {
       </div>
 
       {pdfBlobUrl && (
-        <div className="w-1/2 border border-[var(--border)] rounded-xl overflow-hidden">
+        <div className="w-2/3 border border-[var(--border)] rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2 bg-[var(--muted)] border-b border-[var(--border)]">
             <p className="text-sm font-medium text-[var(--foreground)]">{pdfFileName}</p>
             <button
