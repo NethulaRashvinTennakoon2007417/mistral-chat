@@ -2,9 +2,9 @@
 
 import { useChat } from '@/context/ChatContext';
 import { stripMarkdown } from '@/lib/utils';
-import { Plus, MessageSquare, Trash2, Settings, Moon, Sun, Coffee, Sparkles, Pencil, FileText, Search } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, Settings, Moon, Coffee, Sparkles, Pencil, FileText, Search } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Chat } from '@/types';
+import { Chat, Attachment } from '@/types';
 
 type Theme = 'dark' | 'cream';
 type ActiveTab = 'chat' | 'documents';
@@ -98,7 +98,7 @@ function ChatItem({ chat, isActive, editingId, editTitle, editInputRef, onSelect
 }
 
 export function Sidebar() {
-  const { chats, currentChat, createNewChat, setCurrentChat, removeChat, updateChat, sidebarOpen, toggleSidebar, toggleSettings } = useChat();
+  const { chats, currentChat, createNewChat, setCurrentChat, removeChat, updateChat, sidebarOpen, toggleSidebar, toggleSettings, openDocument, documentAttachment } = useChat();
   const [theme, setTheme] = useState<Theme>('dark');
   const [activeTab, setActiveTab] = useState<ActiveTab>('chat');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -106,6 +106,25 @@ export function Sidebar() {
   const editInputRef = useRef<HTMLInputElement>(null);
 
   const grouped = useMemo(() => groupChatsByTime(chats), [chats]);
+
+  // Collect all PDFs from all chat messages
+  const allDocuments = useMemo(() => {
+    const docs: { attachment: Attachment; chatTitle: string }[] = [];
+    const seen = new Set<string>();
+    for (const chat of chats) {
+      for (const msg of chat.messages) {
+        if (msg.attachments) {
+          for (const att of msg.attachments) {
+            if (att.type === 'application/pdf' && !seen.has(att.id)) {
+              seen.add(att.id);
+              docs.push({ attachment: att, chatTitle: chat.title });
+            }
+          }
+        }
+      }
+    }
+    return docs;
+  }, [chats]);
 
   useEffect(() => {
     const saved = localStorage.getItem('theme') as Theme | null;
@@ -274,12 +293,40 @@ export function Sidebar() {
               </div>
             )
           ) : (
-            <div className="text-center py-16 px-4">
-              <div className="w-10 h-10 rounded-xl bg-[var(--muted)] flex items-center justify-center mx-auto mb-3">
-                <FileText size={18} className="text-[var(--muted-foreground)]" />
+            allDocuments.length === 0 ? (
+              <div className="text-center py-16 px-4">
+                <div className="w-10 h-10 rounded-xl bg-[var(--muted)] flex items-center justify-center mx-auto mb-3">
+                  <FileText size={18} className="text-[var(--muted-foreground)]" />
+                </div>
+                <p className="text-xs text-[var(--muted-foreground)]">No documents yet</p>
+                <p className="text-[10px] text-[var(--muted-foreground)] mt-1">Upload a PDF in any chat to see it here</p>
               </div>
-              <p className="text-xs text-[var(--muted-foreground)]">Upload a PDF in any chat to view it here</p>
-            </div>
+            ) : (
+              <div>
+                <p className="text-[11px] font-medium text-[var(--muted-foreground)] px-3 mb-1.5">
+                  Documents
+                </p>
+                <div className="space-y-0.5">
+                  {allDocuments.map(({ attachment, chatTitle }) => (
+                    <button
+                      key={attachment.id}
+                      onClick={() => openDocument(attachment)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer transition-all duration-150 text-left ${
+                        documentAttachment?.id === attachment.id
+                          ? 'bg-[var(--accent)] text-[var(--accent-foreground)]'
+                          : 'text-[var(--foreground)] hover:bg-[var(--muted)]'
+                      }`}
+                    >
+                      <FileText size={14} className="flex-shrink-0 opacity-40" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm truncate">{attachment.name}</p>
+                        <p className="text-[10px] text-[var(--muted-foreground)] truncate">{stripMarkdown(chatTitle)}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
           )}
         </div>
 
