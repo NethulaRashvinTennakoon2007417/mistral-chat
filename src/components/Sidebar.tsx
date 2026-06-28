@@ -279,15 +279,18 @@ export function Sidebar() {
         {/* Footer - User Profile */}
         <div className="border-t border-[var(--border)] p-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setCurrentChat(null)}
+              className="flex items-center gap-2.5 hover:opacity-80 transition-all duration-200 active:scale-95"
+            >
               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                 M
               </div>
-              <div className="text-sm">
+              <div className="text-sm text-left">
                 <p className="font-medium text-[var(--foreground)]">Mistral Chat</p>
                 <p className="text-[10px] text-[var(--muted-foreground)]">Free</p>
               </div>
-            </div>
+            </button>
             <button
               onClick={cycleTheme}
               className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200"
