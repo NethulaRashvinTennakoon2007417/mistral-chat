@@ -170,17 +170,20 @@ export function Sidebar() {
       {/* Backdrop on mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/20 z-40 lg:hidden backdrop-blur-sm transition-opacity duration-300"
+          className="fixed inset-0 bg-black/20 z-40 lg:hidden backdrop-blur-sm"
+          style={{ transition: 'opacity 0.3s ease', animation: 'fadeIn 0.3s ease' }}
           onClick={toggleSidebar}
         />
       )}
 
       {/* Sidebar Panel - Claude style floating panel with rounded corners */}
       <div
-        className={`sidebar-panel fixed left-3 top-3 bottom-3 z-50 bg-[var(--background)] border border-[var(--border)] rounded-2xl shadow-xl flex flex-col transition-all duration-300 ease-out overflow-hidden ${
-          sidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-[calc(100%+12px)] opacity-0 pointer-events-none'
+        className={`sidebar-panel fixed left-3 top-3 bottom-3 z-50 bg-[var(--background)] border border-[var(--border)] rounded-2xl shadow-xl flex flex-col overflow-hidden ${
+          sidebarOpen 
+            ? 'translate-x-0 opacity-100 scale-100' 
+            : '-translate-x-[calc(100%+12px)] opacity-0 scale-95 pointer-events-none'
         }`}
-        style={{ width: 280 }}
+        style={{ width: 280, transition: 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), scale 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
       >
         {/* Tabs - Chat / Documents */}
         <div className="flex items-center gap-1 px-3 pt-3 pb-2">
