@@ -11,7 +11,6 @@ export interface Message {
   content: string;
   timestamp: Date;
   attachments?: Attachment[];
-  todos?: TodoItem[];
 }
 
 export interface Attachment {
@@ -31,6 +30,7 @@ export interface Chat {
   createdAt: Date;
   updatedAt: Date;
   model: MistralModel;
+  todos?: TodoItem[];
 }
 
 export type MistralModel = 

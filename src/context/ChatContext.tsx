@@ -22,8 +22,9 @@ interface ChatContextType {
   removeChat: (id: string, replaceWith?: Chat | null) => void;
   addMessage: (chatId: string, message: Omit<Message, 'id' | 'timestamp'>) => void;
   updateMessage: (chatId: string, messageId: string, content: string) => void;
-  updateTodos: (chatId: string, messageId: string, todos: TodoItem[]) => void;
-  addTodoMessage: (chatId: string, todos: TodoItem[], content?: string) => void;
+  setTodos: (chatId: string, todos: TodoItem[]) => void;
+  toggleTodo: (chatId: string, todoId: string) => void;
+  clearTodos: (chatId: string) => void;
   setIsGenerating: (value: boolean) => void;
   updateSettings: (settings: Partial<Settings>) => void;
   toggleSidebar: () => void;
@@ -107,6 +108,27 @@ Examples:
 - User asks "pick a color" → suggest Color Picker: [TOOL:color-picker]
 
 IMPORTANT: Always prefer built-in tools over suggesting external websites. If a task can be done with a built-in tool, mention it and include the [TOOL:tool-id] tag. You can still provide text instructions, but always offer the tool as the primary option.
+
+TODO LISTS:
+When a user asks you to do something that involves multiple steps or is a complex task, create a todo list to help them track progress. Use the [TODO] tag at the START of your response. Format:
+[TODO]
+- Step description 1
+- Step description 2
+- Step description 3
+
+Only create todo lists for genuinely complex, multi-step tasks. Do NOT create todo lists for:
+- Simple questions or quick answers
+- Single-step tasks
+- Casual conversation
+- Explanations or definitions
+
+DO create todo lists for:
+- Multi-step coding projects
+- Complex research tasks
+- Step-by-step tutorials
+- Project planning
+- Debugging workflows with multiple steps
+- Any task with 3+ distinct steps
 
 Be helpful, concise, and friendly. When users attach files, reference and use the file content in your responses. If asked about your identity, explain that you are an AI assistant running in Mistral Chat, powered by Mistral AI models.
 
@@ -274,22 +296,12 @@ IMPORTANT - Avoiding Hallucination:
     });
   }, []);
 
-  const updateTodos = useCallback((chatId: string, messageId: string, todos: TodoItem[]) => {
+  const setTodos = useCallback((chatId: string, todos: TodoItem[]) => {
     setChats((prev) => {
       const chat = prev.find((c) => c.id === chatId);
       if (!chat) return prev;
-
-      const updatedChat = {
-        ...chat,
-        messages: chat.messages.map((msg) =>
-          msg.id === messageId ? { ...msg, todos } : msg
-        ),
-        updatedAt: new Date(),
-      };
-
+      const updatedChat = { ...chat, todos, updatedAt: new Date() };
       saveChat(updatedChat);
-
-      // Always update currentChat if it matches
       setCurrentChatState((prevCurrent) => {
         if (prevCurrent?.id === chatId) {
           currentChatRef.current = updatedChat;
@@ -297,37 +309,47 @@ IMPORTANT - Avoiding Hallucination:
         }
         return prevCurrent;
       });
-
       return prev.map((c) => (c.id === chatId ? updatedChat : c));
     });
   }, []);
 
-  const addTodoMessage = useCallback((chatId: string, todos: TodoItem[], content?: string) => {
-    const newMessage: Message = {
-      id: generateId(),
-      role: 'assistant',
-      content: content || '',
-      timestamp: new Date(),
-      todos,
-    };
+  const toggleTodo = useCallback((chatId: string, todoId: string) => {
+    setChats((prev) => {
+      const chat = prev.find((c) => c.id === chatId);
+      if (!chat || !chat.todos) return prev;
+      const updatedTodos = chat.todos.map(t => {
+        if (t.id !== todoId) return t;
+        if (t.status === 'completed') return { ...t, status: 'pending' as const };
+        if (t.status === 'pending') return { ...t, status: 'in_progress' as const };
+        if (t.status === 'in_progress') return { ...t, status: 'completed' as const };
+        return t;
+      });
+      const updatedChat = { ...chat, todos: updatedTodos, updatedAt: new Date() };
+      saveChat(updatedChat);
+      setCurrentChatState((prevCurrent) => {
+        if (prevCurrent?.id === chatId) {
+          currentChatRef.current = updatedChat;
+          return updatedChat;
+        }
+        return prevCurrent;
+      });
+      return prev.map((c) => (c.id === chatId ? updatedChat : c));
+    });
+  }, []);
 
+  const clearTodos = useCallback((chatId: string) => {
     setChats((prev) => {
       const chat = prev.find((c) => c.id === chatId);
       if (!chat) return prev;
-
-      const updatedChat = {
-        ...chat,
-        messages: [...chat.messages, newMessage],
-        updatedAt: new Date(),
-      };
-
+      const updatedChat = { ...chat, todos: undefined, updatedAt: new Date() };
       saveChat(updatedChat);
-
-      if (currentChatRef.current?.id === chatId) {
-        setCurrentChatState(updatedChat);
-        currentChatRef.current = updatedChat;
-      }
-
+      setCurrentChatState((prevCurrent) => {
+        if (prevCurrent?.id === chatId) {
+          currentChatRef.current = updatedChat;
+          return updatedChat;
+        }
+        return prevCurrent;
+      });
       return prev.map((c) => (c.id === chatId ? updatedChat : c));
     });
   }, []);
@@ -384,8 +406,9 @@ IMPORTANT - Avoiding Hallucination:
         removeChat,
         addMessage,
         updateMessage,
-        updateTodos,
-        addTodoMessage,
+        setTodos,
+        toggleTodo,
+        clearTodos,
         setIsGenerating,
         updateSettings,
         toggleSidebar,

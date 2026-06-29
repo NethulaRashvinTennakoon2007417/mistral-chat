@@ -1,47 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Circle, CheckCircle2, Loader2 } from 'lucide-react';
-
-export interface TodoItem {
-  id: string;
-  text: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  priority?: 'high' | 'medium' | 'low';
-}
+import { ChevronDown, ChevronRight, Circle, CheckCircle2, Loader2, X } from 'lucide-react';
+import { TodoItem } from '@/types';
 
 interface TodoMessageProps {
   todos: TodoItem[];
-  onUpdate?: (todos: TodoItem[]) => void;
-  readOnly?: boolean;
+  chatId: string;
+  onToggle: (todoId: string) => void;
+  onClear: () => void;
 }
 
-export function TodoMessage({ todos, onUpdate, readOnly = false }: TodoMessageProps) {
+export function TodoMessage({ todos, chatId, onToggle, onClear }: TodoMessageProps) {
   const [collapsed, setCollapsed] = useState(false);
   const completedCount = todos.filter(t => t.status === 'completed').length;
   const totalCount = todos.length;
 
-  const toggleTodo = (id: string) => {
-    if (readOnly || !onUpdate) return;
-    onUpdate(todos.map(t => {
-      if (t.id !== id) return t;
-      if (t.status === 'completed') return { ...t, status: 'pending' as const };
-      if (t.status === 'pending') return { ...t, status: 'in_progress' as const };
-      if (t.status === 'in_progress') return { ...t, status: 'completed' as const };
-      return t;
-    }));
-  };
-
   const getStatusIcon = (status: TodoItem['status']) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />;
+        return <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />;
       case 'in_progress':
-        return <Loader2 size={18} className="text-amber-400 shrink-0 animate-spin" />;
-      case 'cancelled':
-        return <Circle size={18} className="text-[var(--muted-foreground)] shrink-0 opacity-40" />;
+        return <Loader2 size={16} className="text-amber-400 shrink-0 animate-spin" />;
       default:
-        return <Circle size={18} className="text-[var(--muted-foreground)] shrink-0" />;
+        return <Circle size={16} className="text-[var(--muted-foreground)] shrink-0" />;
     }
   };
 
@@ -49,8 +31,6 @@ export function TodoMessage({ todos, onUpdate, readOnly = false }: TodoMessagePr
     switch (status) {
       case 'completed':
         return 'line-through text-[var(--muted-foreground)]';
-      case 'cancelled':
-        return 'line-through text-[var(--muted-foreground)] opacity-50';
       case 'in_progress':
         return 'text-[var(--foreground)]';
       default:
@@ -59,49 +39,45 @@ export function TodoMessage({ todos, onUpdate, readOnly = false }: TodoMessagePr
   };
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] overflow-hidden my-2 max-w-2xl">
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] overflow-hidden mb-2">
       {/* Header */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--muted)] transition-colors"
-      >
-        <span className="text-sm font-medium text-[var(--foreground)]">
-          {completedCount} of {totalCount} todos completed
-        </span>
-        {collapsed ? (
-          <ChevronRight size={16} className="text-[var(--muted-foreground)]" />
-        ) : (
-          <ChevronDown size={16} className="text-[var(--muted-foreground)]" />
-        )}
-      </button>
+      <div className="flex items-center justify-between px-4 py-2.5">
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="flex items-center gap-2 text-sm font-medium text-[var(--foreground)] hover:text-[var(--primary)] transition-colors"
+        >
+          {collapsed ? (
+            <ChevronRight size={14} className="text-[var(--muted-foreground)]" />
+          ) : (
+            <ChevronDown size={14} className="text-[var(--muted-foreground)]" />
+          )}
+          <span>{completedCount} of {totalCount} todos completed</span>
+        </button>
+        <button
+          onClick={onClear}
+          className="flex items-center justify-center w-5 h-5 rounded hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-colors"
+          title="Clear todos"
+        >
+          <X size={12} />
+        </button>
+      </div>
 
       {/* Todo items */}
       {!collapsed && (
         <div className="border-t border-[var(--border)]">
-          {todos.map((todo, i) => (
-            <div
+          {todos.map((todo) => (
+            <button
               key={todo.id}
-              className={`flex items-start gap-3 px-4 py-2.5 ${
-                i < todos.length - 1 ? 'border-b border-[var(--border)]' : ''
-              } ${!readOnly ? 'hover:bg-[var(--muted)] cursor-pointer' : ''} transition-colors`}
-              onClick={() => toggleTodo(todo.id)}
+              onClick={() => onToggle(todo.id)}
+              className="w-full flex items-center gap-3 px-4 py-2 hover:bg-[var(--muted)] transition-colors text-left"
             >
-              <div className="mt-0.5">
+              <div className="mt-px">
                 {getStatusIcon(todo.status)}
               </div>
               <span className={`text-sm leading-relaxed ${getStatusStyle(todo.status)}`}>
                 {todo.text}
               </span>
-              {todo.priority && todo.priority !== 'medium' && (
-                <span className={`ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${
-                  todo.priority === 'high'
-                    ? 'bg-red-500/20 text-red-400'
-                    : 'bg-blue-500/20 text-blue-400'
-                }`}>
-                  {todo.priority}
-                </span>
-              )}
-            </div>
+            </button>
           ))}
         </div>
       )}
