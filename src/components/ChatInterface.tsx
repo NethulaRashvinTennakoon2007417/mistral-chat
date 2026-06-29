@@ -115,13 +115,14 @@ export function ChatInterface() {
   // Listen for todo updates from TodoMessage components
   useEffect(() => {
     const handleUpdateTodos = (e: CustomEvent<{ messageId: string; todos: TodoItem[] }>) => {
-      if (currentChat) {
-        updateTodos(currentChat.id, e.detail.messageId, e.detail.todos);
+      const chat = currentChatRef.current;
+      if (chat) {
+        updateTodos(chat.id, e.detail.messageId, e.detail.todos);
       }
     };
     document.addEventListener('update-todos', handleUpdateTodos as EventListener);
     return () => document.removeEventListener('update-todos', handleUpdateTodos as EventListener);
-  }, [currentChat, updateTodos]);
+  }, [updateTodos]);
 
   const getSystemPrompt = useCallback(() => {
     const parts: string[] = [];

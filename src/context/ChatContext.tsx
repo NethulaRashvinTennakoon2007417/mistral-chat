@@ -289,10 +289,14 @@ IMPORTANT - Avoiding Hallucination:
 
       saveChat(updatedChat);
 
-      if (currentChatRef.current?.id === chatId) {
-        setCurrentChatState(updatedChat);
-        currentChatRef.current = updatedChat;
-      }
+      // Always update currentChat if it matches
+      setCurrentChatState((prevCurrent) => {
+        if (prevCurrent?.id === chatId) {
+          currentChatRef.current = updatedChat;
+          return updatedChat;
+        }
+        return prevCurrent;
+      });
 
       return prev.map((c) => (c.id === chatId ? updatedChat : c));
     });
