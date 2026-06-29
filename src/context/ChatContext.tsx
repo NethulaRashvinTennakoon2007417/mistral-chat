@@ -296,12 +296,6 @@ IMPORTANT - Avoiding Hallucination:
     });
   }, []);
 
-  const syncCurrentChat = useCallback((chatId: string) => {
-    if (currentChatRef.current?.id === chatId) {
-      setCurrentChatState(currentChatRef.current);
-    }
-  }, []);
-
   const toggleTodo = useCallback((chatId: string, todoId: string) => {
     setChats((prev) => {
       const chat = prev.find((c) => c.id === chatId);
@@ -315,11 +309,13 @@ IMPORTANT - Avoiding Hallucination:
       });
       const updatedChat = { ...chat, todos: updatedTodos, updatedAt: new Date() };
       saveChat(updatedChat);
-      currentChatRef.current = updatedChat;
+      if (currentChatRef.current?.id === chatId) {
+        setCurrentChatState(updatedChat);
+        currentChatRef.current = updatedChat;
+      }
       return prev.map((c) => (c.id === chatId ? updatedChat : c));
     });
-    syncCurrentChat(chatId);
-  }, [syncCurrentChat]);
+  }, []);
 
   const setTodos = useCallback((chatId: string, todos: TodoItem[]) => {
     setChats((prev) => {
@@ -327,11 +323,13 @@ IMPORTANT - Avoiding Hallucination:
       if (!chat) return prev;
       const updatedChat = { ...chat, todos, updatedAt: new Date() };
       saveChat(updatedChat);
-      currentChatRef.current = updatedChat;
+      if (currentChatRef.current?.id === chatId) {
+        setCurrentChatState(updatedChat);
+        currentChatRef.current = updatedChat;
+      }
       return prev.map((c) => (c.id === chatId ? updatedChat : c));
     });
-    syncCurrentChat(chatId);
-  }, [syncCurrentChat]);
+  }, []);
 
   const clearTodos = useCallback((chatId: string) => {
     setChats((prev) => {
@@ -339,11 +337,13 @@ IMPORTANT - Avoiding Hallucination:
       if (!chat) return prev;
       const updatedChat = { ...chat, todos: undefined, updatedAt: new Date() };
       saveChat(updatedChat);
-      currentChatRef.current = updatedChat;
+      if (currentChatRef.current?.id === chatId) {
+        setCurrentChatState(updatedChat);
+        currentChatRef.current = updatedChat;
+      }
       return prev.map((c) => (c.id === chatId ? updatedChat : c));
     });
-    syncCurrentChat(chatId);
-  }, [syncCurrentChat]);
+  }, []);
 
   const updateSettings = useCallback((newSettings: Partial<Settings>) => {
     setSettings((prev) => {
