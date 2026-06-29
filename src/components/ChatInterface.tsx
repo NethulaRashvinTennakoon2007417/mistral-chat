@@ -247,17 +247,30 @@ export function ChatInterface() {
 
       // Parse [TODO] tags from response
       if (currentChat) {
-        const todoMatch = responseContent.match(/\[TODO\]\s*\n((?:- .+\n?)+)/i);
-        if (todoMatch) {
-          const lines = todoMatch[1].split('\n').filter(l => l.trim().startsWith('- '));
-          if (lines.length > 0) {
-            const todos: TodoItem[] = lines.map((line, i) => ({
-              id: `todo-${Date.now()}-${i}`,
-              text: line.replace(/^-\s*/, '').trim(),
-              status: 'pending' as const,
-            }));
-            setTodos(currentChat.id, todos);
-          }
+        // Format 1: [TODO]\n- item1\n- item2\n- item3
+        const blockMatch = responseContent.match(/\[TODO\]\s*\n((?:- .+\n?)+)/i);
+        // Format 2: [TODO] - item1\n[TODO] - item2\n[TODO] - item3
+        const inlineMatches = [...responseContent.matchAll(/\[TODO\]\s*- (.+)/gi)];
+
+        let todos: TodoItem[] = [];
+
+        if (blockMatch) {
+          const lines = blockMatch[1].split('\n').filter(l => l.trim().startsWith('- '));
+          todos = lines.map((line, i) => ({
+            id: `todo-${Date.now()}-${i}`,
+            text: line.replace(/^-\s*/, '').trim(),
+            status: 'pending' as const,
+          }));
+        } else if (inlineMatches.length > 0) {
+          todos = inlineMatches.map((m, i) => ({
+            id: `todo-${Date.now()}-${i}`,
+            text: m[1].trim(),
+            status: 'pending' as const,
+          }));
+        }
+
+        if (todos.length > 0) {
+          setTodos(currentChat.id, todos);
         }
       }
 
