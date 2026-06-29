@@ -45,37 +45,37 @@ export function SideBySide({ apiKey, systemPrompt, onClose }: SideBySideProps) {
     // Run both in parallel
     const runModel = async (
       model: MistralModel,
-      updateFn: (updater: (prev: ComparisonResult) => ComparisonResult) => void,
       side: 'modelA' | 'modelB'
     ) => {
       const start = Date.now();
-      abortARef.current = side === 'modelA' ? new AbortController() : abortARef.current;
-      abortBRef.current = side === 'modelB' ? new AbortController() : abortBRef.current;
-      const abort = side === 'modelA' ? abortARef.current : abortBRef.current;
+      const abort = new AbortController();
+      if (side === 'modelA') abortARef.current = abort;
+      else abortBRef.current = abort;
 
       let content = '';
       try {
         const resolved = detectModel(prompt, undefined, model);
         for await (const chunk of streamChatCompletion(apiKey, [userMsg], resolved, 0.7, 2048, systemPrompt)) {
-          if (abort?.signal.aborted) break;
+          if (abort.signal.aborted) break;
           content += chunk;
-          updateFn((prev) => ({
+          const snapshot = { ...(abortARef.current ? { modelA: { model: modelA, content: '', loading: true, time: 0 } } : { modelA: initial.modelA }), ...(abortBRef.current ? { modelB: { model: modelB, content: '', loading: true, time: 0 } } : { modelB: initial.modelB }) };
+          setResult(prev => prev ? {
             ...prev,
             [side]: { ...prev[side], content, loading: true, time: Date.now() - start },
-          }));
+          } : prev);
         }
       } catch (err) {
         content += `\n\nError: ${err instanceof Error ? err.message : 'Failed'}`;
       }
-      updateFn((prev) => ({
+      setResult(prev => prev ? {
         ...prev,
         [side]: { ...prev[side], content, loading: false, time: Date.now() - start },
-      }));
+      } : prev);
     };
 
     await Promise.all([
-      runModel(modelA, setResult, 'modelA'),
-      runModel(modelB, setResult, 'modelB'),
+      runModel(modelA, 'modelA'),
+      runModel(modelB, 'modelB'),
     ]);
     setIsRunning(false);
   }, [prompt, modelA, modelB, apiKey, systemPrompt, isRunning]);
