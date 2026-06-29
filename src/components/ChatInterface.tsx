@@ -245,14 +245,16 @@ export function ChatInterface() {
       if (rafId) cancelAnimationFrame(rafId);
       flushToState();
 
-      // Parse [TODO] tags from response
+      // Parse [TODO] tags and checkbox patterns from response
       if (currentChat) {
+        let todos: TodoItem[] = [];
+
         // Format 1: [TODO]\n- item1\n- item2\n- item3
         const blockMatch = responseContent.match(/\[TODO\]\s*\n((?:- .+\n?)+)/i);
         // Format 2: [TODO] - item1\n[TODO] - item2\n[TODO] - item3
         const inlineMatches = [...responseContent.matchAll(/\[TODO\]\s*- (.+)/gi)];
-
-        let todos: TodoItem[] = [];
+        // Format 3: [ ] item1\n[ ] item2 (checkbox pattern)
+        const checkboxMatches = [...responseContent.matchAll(/\[[ x]\]\s*(.+)/gi)];
 
         if (blockMatch) {
           const lines = blockMatch[1].split('\n').filter(l => l.trim().startsWith('- '));
@@ -263,6 +265,13 @@ export function ChatInterface() {
           }));
         } else if (inlineMatches.length > 0) {
           todos = inlineMatches.map((m, i) => ({
+            id: `todo-${Date.now()}-${i}`,
+            text: m[1].trim(),
+            status: 'pending' as const,
+          }));
+        } else if (checkboxMatches.length >= 3) {
+          // Only create todos if 3+ checkbox items (to avoid false positives)
+          todos = checkboxMatches.map((m, i) => ({
             id: `todo-${Date.now()}-${i}`,
             text: m[1].trim(),
             status: 'pending' as const,
