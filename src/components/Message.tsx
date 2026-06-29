@@ -1,11 +1,66 @@
 'use client';
 
 import { Message as MessageType } from '@/types';
-import { Copy, Check, RotateCcw, Edit2, ThumbsUp, ThumbsDown, Volume2, VolumeX, Sparkles, FileText, Image as ImageIcon } from 'lucide-react';
+import { Copy, Check, RotateCcw, Edit2, ThumbsUp, ThumbsDown, Volume2, VolumeX, Sparkles, FileText, Image as ImageIcon, Wrench } from 'lucide-react';
 import { useState, useRef, useEffect, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
+const TOOL_MAP: Record<string, { name: string; icon: string; desc: string }> = {
+  'word-counter': { name: 'Word Counter', icon: '📝', desc: 'Count words & characters' },
+  'case-converter': { name: 'Case Converter', icon: '🔄', desc: 'UPPER, lower, Title' },
+  'text-diff': { name: 'Text Diff', icon: '🔍', desc: 'Compare two texts' },
+  'lorem-ipsum': { name: 'Lorem Ipsum', icon: '📄', desc: 'Placeholder text' },
+  'find-replace': { name: 'Find & Replace', icon: '🔎', desc: 'Search and replace' },
+  'remove-spaces': { name: 'Remove Extra Spaces', icon: '✨', desc: 'Clean whitespace' },
+  'sort-lines': { name: 'Sort Lines', icon: '📋', desc: 'Sort text lines' },
+  'remove-duplicates': { name: 'Remove Duplicates', icon: '🗑️', desc: 'Remove duplicate lines' },
+  'json-formatter': { name: 'JSON Formatter', icon: '{ }', desc: 'Format & validate JSON' },
+  'base64': { name: 'Base64', icon: '🔐', desc: 'Encode & decode' },
+  'url-encode': { name: 'URL Encode', icon: '🔗', desc: 'Encode & decode URLs' },
+  'hash-generator': { name: 'Hash Generator', icon: '#️⃣', desc: 'SHA-256, etc.' },
+  'uuid-generator': { name: 'UUID Generator', icon: '🆔', desc: 'Generate UUIDs' },
+  'regex-tester': { name: 'Regex Tester', icon: '⚡', desc: 'Test regular expressions' },
+  'jwt-decoder': { name: 'JWT Decoder', icon: '🎫', desc: 'Decode JWT tokens' },
+  'color-picker': { name: 'Color Picker', icon: '🎨', desc: 'Pick colors' },
+  'qr-generator': { name: 'QR Generator', icon: '📱', desc: 'Create QR codes' },
+  'image-to-pdf': { name: 'Image to PDF', icon: '🖼️', desc: 'Convert images to PDF' },
+};
+
+function openTool(toolId: string) {
+  window.dispatchEvent(new CustomEvent('select-tool', { detail: toolId }));
+}
+
+function ToolTag({ toolId }: { toolId: string }) {
+  const tool = TOOL_MAP[toolId];
+  if (!tool) return <code className="text-xs">[tool: {toolId}]</code>;
+  return (
+    <button
+      onClick={() => openTool(toolId)}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 my-1 rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/20 text-[var(--primary)] text-xs font-medium hover:bg-[var(--primary)]/20 hover:border-[var(--primary)]/30 transition-all duration-200 active:scale-95 cursor-pointer"
+      title={`Open ${tool.name}`}
+    >
+      <span>{tool.icon}</span>
+      <span>{tool.name}</span>
+      <Wrench size={10} className="opacity-50" />
+    </button>
+  );
+}
+
+function ToolTagsInline({ content }: { content: string }) {
+  const toolMatches = content.match(/\[TOOL:([a-z-]+)\]/g);
+  if (!toolMatches || toolMatches.length === 0) return null;
+  const toolIds = [...new Set(toolMatches.map(m => m.match(/\[TOOL:([a-z-]+)\]/)?.[1]).filter(Boolean))];
+  if (toolIds.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[var(--border)]/50">
+      {toolIds.map((id) => (
+        <ToolTag key={id} toolId={id!} />
+      ))}
+    </div>
+  );
+}
 
 interface MessageProps {
   message: MessageType;
@@ -229,6 +284,7 @@ export const Message = memo(function Message({ message, isLatest, isStreaming, o
                   >
                     {message.content}
                   </ReactMarkdown>
+                  <ToolTagsInline content={message.content} />
                 </div>
               ) : isStreaming ? (
                 <div className="flex items-center gap-1.5 py-1">
