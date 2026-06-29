@@ -5,10 +5,16 @@ import { useChat } from '@/context/ChatContext';
 import { Message } from '@/components/Message';
 import { ChatInput } from '@/components/ChatInput';
 import { DocumentViewer } from '@/components/DocumentViewer';
+import { PromptTemplates } from '@/components/PromptTemplates';
+import { ChatExport } from '@/components/ChatExport';
+import { KeyboardShortcuts } from '@/components/KeyboardShortcuts';
+import { SideBySide } from '@/components/SideBySide';
+import { UsageDashboard } from '@/components/UsageDashboard';
+import { PromptPresets } from '@/components/PromptPresets';
 import { streamChatCompletion, generateTitle } from '@/lib/mistral';
 import { detectModel } from '@/lib/auto-model';
 import { Message as MessageType, Attachment, MistralModel, ResolvedModel } from '@/types';
-import { Menu, Share2, Check, AlertCircle, X, Plus, Sparkles, FileText } from 'lucide-react';
+import { Menu, Share2, Check, AlertCircle, X, Plus, Sparkles, FileText, Download, Keyboard, ArrowLeftRight, BarChart3, BookOpen, ChevronDown } from 'lucide-react';
 import { stripMarkdown } from '@/lib/utils';
 
 function getGreeting() {
@@ -41,6 +47,7 @@ export function ChatInterface() {
     openDocument,
     closeDocument,
     toggleCanvas,
+    updateSettings,
   } = useChat();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -51,6 +58,12 @@ export function ChatInterface() {
   const [showBanner, setShowBanner] = useState(true);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [resolvedModel, setResolvedModel] = useState<ResolvedModel | null>(null);
+  const [showPromptTemplates, setShowPromptTemplates] = useState(false);
+  const [showChatExport, setShowChatExport] = useState(false);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  const [showSideBySide, setShowSideBySide] = useState(false);
+  const [showUsageDashboard, setShowUsageDashboard] = useState(false);
+  const [showPromptPresets, setShowPromptPresets] = useState(false);
 
   useEffect(() => {
     currentChatRef.current = currentChat;
@@ -75,10 +88,22 @@ export function ChatInterface() {
         e.preventDefault();
         toggleSidebar();
       }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault();
+        createNewChat();
+      }
+      if (e.key === 'Escape') {
+        setShowPromptTemplates(false);
+        setShowChatExport(false);
+        setShowKeyboardShortcuts(false);
+        setShowSideBySide(false);
+        setShowUsageDashboard(false);
+        setShowPromptPresets(false);
+      }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [toggleSidebar]);
+  }, [toggleSidebar, createNewChat]);
 
   const getSystemPrompt = useCallback(() => {
     const parts: string[] = [];
@@ -367,6 +392,34 @@ export function ChatInterface() {
           </div>
           <div className="flex items-center gap-1">
             <button
+              onClick={() => setShowPromptTemplates(true)}
+              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
+              title="Prompt Templates"
+            >
+              <Sparkles size={16} />
+            </button>
+            <button
+              onClick={() => setShowSideBySide(true)}
+              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
+              title="Compare Models"
+            >
+              <ArrowLeftRight size={16} />
+            </button>
+            <button
+              onClick={() => setShowChatExport(true)}
+              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
+              title="Export Chat"
+            >
+              <Download size={16} />
+            </button>
+            <button
+              onClick={() => setShowUsageDashboard(true)}
+              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
+              title="API Usage"
+            >
+              <BarChart3 size={16} />
+            </button>
+            <button
               onClick={() => createNewChat()}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 text-sm h-8 active:scale-95"
               title="New Chat"
@@ -522,6 +575,40 @@ export function ChatInterface() {
             onClose={closeDocument}
           />
         </div>
+      )}
+
+      {/* Modals */}
+      {showPromptTemplates && (
+        <PromptTemplates
+          onSelect={(prompt) => handleSend(prompt)}
+          onClose={() => setShowPromptTemplates(false)}
+        />
+      )}
+      {showChatExport && currentChat && (
+        <ChatExport
+          chat={currentChat}
+          onClose={() => setShowChatExport(false)}
+        />
+      )}
+      {showKeyboardShortcuts && (
+        <KeyboardShortcuts onClose={() => setShowKeyboardShortcuts(false)} />
+      )}
+      {showSideBySide && (
+        <SideBySide
+          apiKey={settings.apiKey}
+          systemPrompt={getSystemPrompt()}
+          onClose={() => setShowSideBySide(false)}
+        />
+      )}
+      {showUsageDashboard && (
+        <UsageDashboard onClose={() => setShowUsageDashboard(false)} />
+      )}
+      {showPromptPresets && (
+        <PromptPresets
+          currentPrompt={settings.systemPrompt}
+          onSelect={(prompt) => { updateSettings({ systemPrompt: prompt }); setShowPromptPresets(false); }}
+          onClose={() => setShowPromptPresets(false)}
+        />
       )}
     </div>
   );
