@@ -253,8 +253,10 @@ export function ChatInterface() {
         const blockMatch = responseContent.match(/\[TODO\]\s*\n((?:- .+\n?)+)/i);
         // Format 2: [TODO] - item1\n[TODO] - item2\n[TODO] - item3
         const inlineMatches = [...responseContent.matchAll(/\[TODO\]\s*- (.+)/gi)];
-        // Format 3: [ ] item1\n[ ] item2 (checkbox pattern)
+        // Format 3: [ ] item or [x] item (checkbox pattern)
         const checkboxMatches = [...responseContent.matchAll(/\[[ x]\]\s*(.+)/gi)];
+        // Format 4: ✅ item (emoji checkmark pattern)
+        const emojiMatches = [...responseContent.matchAll(/✅\s*\*{0,2}(.+?)\*{0,2}(?:\s|$)/g)];
 
         if (blockMatch) {
           const lines = blockMatch[1].split('\n').filter(l => l.trim().startsWith('- '));
@@ -270,8 +272,13 @@ export function ChatInterface() {
             status: 'pending' as const,
           }));
         } else if (checkboxMatches.length >= 3) {
-          // Only create todos if 3+ checkbox items (to avoid false positives)
           todos = checkboxMatches.map((m, i) => ({
+            id: `todo-${Date.now()}-${i}`,
+            text: m[1].trim(),
+            status: 'pending' as const,
+          }));
+        } else if (emojiMatches.length >= 3) {
+          todos = emojiMatches.map((m, i) => ({
             id: `todo-${Date.now()}-${i}`,
             text: m[1].trim(),
             status: 'pending' as const,
