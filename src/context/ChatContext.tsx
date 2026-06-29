@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { Chat, Message, MistralModel, Settings, Attachment } from '@/types';
+import { Chat, Message, MistralModel, Settings, Attachment, TodoItem } from '@/types';
 import { getChats, saveChat, deleteChat, getSettings, saveSettings } from '@/lib/storage';
 import { generateId } from '@/lib/utils';
 
@@ -22,6 +22,8 @@ interface ChatContextType {
   removeChat: (id: string, replaceWith?: Chat | null) => void;
   addMessage: (chatId: string, message: Omit<Message, 'id' | 'timestamp'>) => void;
   updateMessage: (chatId: string, messageId: string, content: string) => void;
+  updateTodos: (chatId: string, messageId: string, todos: TodoItem[]) => void;
+  addTodoMessage: (chatId: string, todos: TodoItem[], content?: string) => void;
   setIsGenerating: (value: boolean) => void;
   updateSettings: (settings: Partial<Settings>) => void;
   toggleSidebar: () => void;
@@ -272,6 +274,60 @@ IMPORTANT - Avoiding Hallucination:
     });
   }, []);
 
+  const updateTodos = useCallback((chatId: string, messageId: string, todos: TodoItem[]) => {
+    setChats((prev) => {
+      const chat = prev.find((c) => c.id === chatId);
+      if (!chat) return prev;
+
+      const updatedChat = {
+        ...chat,
+        messages: chat.messages.map((msg) =>
+          msg.id === messageId ? { ...msg, todos } : msg
+        ),
+        updatedAt: new Date(),
+      };
+
+      saveChat(updatedChat);
+
+      if (currentChatRef.current?.id === chatId) {
+        setCurrentChatState(updatedChat);
+        currentChatRef.current = updatedChat;
+      }
+
+      return prev.map((c) => (c.id === chatId ? updatedChat : c));
+    });
+  }, []);
+
+  const addTodoMessage = useCallback((chatId: string, todos: TodoItem[], content?: string) => {
+    const newMessage: Message = {
+      id: generateId(),
+      role: 'assistant',
+      content: content || '',
+      timestamp: new Date(),
+      todos,
+    };
+
+    setChats((prev) => {
+      const chat = prev.find((c) => c.id === chatId);
+      if (!chat) return prev;
+
+      const updatedChat = {
+        ...chat,
+        messages: [...chat.messages, newMessage],
+        updatedAt: new Date(),
+      };
+
+      saveChat(updatedChat);
+
+      if (currentChatRef.current?.id === chatId) {
+        setCurrentChatState(updatedChat);
+        currentChatRef.current = updatedChat;
+      }
+
+      return prev.map((c) => (c.id === chatId ? updatedChat : c));
+    });
+  }, []);
+
   const updateSettings = useCallback((newSettings: Partial<Settings>) => {
     setSettings((prev) => {
       const updated = { ...prev, ...newSettings };
@@ -324,6 +380,8 @@ IMPORTANT - Avoiding Hallucination:
         removeChat,
         addMessage,
         updateMessage,
+        updateTodos,
+        addTodoMessage,
         setIsGenerating,
         updateSettings,
         toggleSidebar,

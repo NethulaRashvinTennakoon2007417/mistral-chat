@@ -1,8 +1,9 @@
 'use client';
 
-import { Message as MessageType } from '@/types';
+import { Message as MessageType, TodoItem } from '@/types';
 import { Copy, Check, RotateCcw, Edit2, ThumbsUp, ThumbsDown, Volume2, VolumeX, Sparkles, FileText, Image as ImageIcon, Wrench } from 'lucide-react';
-import { useState, useRef, useEffect, memo } from 'react';
+import { useState, useRef, useEffect, memo, useCallback } from 'react';
+import { TodoMessage } from './TodoMessage';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -293,6 +294,14 @@ export const Message = memo(function Message({ message, isLatest, isStreaming, o
                   <span className="typing-dot"></span>
                 </div>
               ) : null}
+              {message.todos && message.todos.length > 0 && (
+                <TodoMessage
+                  todos={message.todos}
+                  onUpdate={(updatedTodos) => {
+                    window.dispatchEvent(new CustomEvent('update-todos', { detail: { messageId: message.id, todos: updatedTodos } }));
+                  }}
+                />
+              )}
             </div>
             {message.content && !isStreaming && (
               <div className="flex items-center gap-0 mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">

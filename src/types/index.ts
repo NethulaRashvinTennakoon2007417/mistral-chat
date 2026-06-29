@@ -1,9 +1,17 @@
+export interface TodoItem {
+  id: string;
+  text: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  priority?: 'high' | 'medium' | 'low';
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
   attachments?: Attachment[];
+  todos?: TodoItem[];
 }
 
 export interface Attachment {

@@ -13,8 +13,9 @@ import { UsageDashboard } from '@/components/UsageDashboard';
 import { PromptPresets } from '@/components/PromptPresets';
 import { streamChatCompletion, generateTitle } from '@/lib/mistral';
 import { detectModel } from '@/lib/auto-model';
+import { TodoItem } from '@/types';
 import { Message as MessageType, Attachment, MistralModel, ResolvedModel } from '@/types';
-import { Menu, Share2, Check, AlertCircle, X, Plus, Sparkles, FileText, Download, Keyboard, ArrowLeftRight, BarChart3, BookOpen, ChevronDown } from 'lucide-react';
+import { Menu, Share2, Check, AlertCircle, X, Plus, Sparkles, FileText, Download, Keyboard, ArrowLeftRight, BarChart3, BookOpen, ChevronDown, CheckSquare } from 'lucide-react';
 import { stripMarkdown } from '@/lib/utils';
 
 function getGreeting() {
@@ -48,6 +49,8 @@ export function ChatInterface() {
     closeDocument,
     toggleCanvas,
     updateSettings,
+    updateTodos,
+    addTodoMessage,
   } = useChat();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -64,6 +67,9 @@ export function ChatInterface() {
   const [showSideBySide, setShowSideBySide] = useState(false);
   const [showUsageDashboard, setShowUsageDashboard] = useState(false);
   const [showPromptPresets, setShowPromptPresets] = useState(false);
+  const [showTodoDialog, setShowTodoDialog] = useState(false);
+  const [todoInput, setTodoInput] = useState('');
+  const [todoPriority, setTodoPriority] = useState<'high' | 'medium' | 'low'>('medium');
 
   useEffect(() => {
     currentChatRef.current = currentChat;
@@ -99,11 +105,23 @@ export function ChatInterface() {
         setShowSideBySide(false);
         setShowUsageDashboard(false);
         setShowPromptPresets(false);
+        setShowTodoDialog(false);
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [toggleSidebar, createNewChat]);
+
+  // Listen for todo updates from TodoMessage components
+  useEffect(() => {
+    const handleUpdateTodos = (e: CustomEvent<{ messageId: string; todos: TodoItem[] }>) => {
+      if (currentChat) {
+        updateTodos(currentChat.id, e.detail.messageId, e.detail.todos);
+      }
+    };
+    document.addEventListener('update-todos', handleUpdateTodos as EventListener);
+    return () => document.removeEventListener('update-todos', handleUpdateTodos as EventListener);
+  }, [currentChat, updateTodos]);
 
   const getSystemPrompt = useCallback(() => {
     const parts: string[] = [];
@@ -113,6 +131,20 @@ export function ChatInterface() {
     }
     return parts.length > 0 ? parts.join('\n') : undefined;
   }, [settings.systemPrompt, settings.memories]);
+
+  const createTodo = useCallback(() => {
+    if (!todoInput.trim() || !currentChat) return;
+    const lines = todoInput.split('\n').filter(l => l.trim());
+    const todos: TodoItem[] = lines.map((line, i) => ({
+      id: `todo-${Date.now()}-${i}`,
+      text: line.trim().replace(/^[-*]\s*/, ''),
+      status: 'pending' as const,
+      priority: todoPriority,
+    }));
+    addTodoMessage(currentChat.id, todos);
+    setTodoInput('');
+    setShowTodoDialog(false);
+  }, [todoInput, todoPriority, currentChat, addTodoMessage]);
 
   const handleCanvasToggle = useCallback(() => {
     if (documentAttachment) {
@@ -420,6 +452,13 @@ export function ChatInterface() {
               <BarChart3 size={16} />
             </button>
             <button
+              onClick={() => setShowTodoDialog(true)}
+              className="flex items-center justify-center w-8 h-8 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-90"
+              title="Create Todo List"
+            >
+              <CheckSquare size={16} />
+            </button>
+            <button
               onClick={() => createNewChat()}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 text-sm h-8 active:scale-95"
               title="New Chat"
@@ -609,6 +648,75 @@ export function ChatInterface() {
           onSelect={(prompt) => { updateSettings({ systemPrompt: prompt }); setShowPromptPresets(false); }}
           onClose={() => setShowPromptPresets(false)}
         />
+      )}
+      {showTodoDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[var(--background)] border border-[var(--border)] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden mx-4">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+              <div className="flex items-center gap-2">
+                <CheckSquare size={20} className="text-[var(--primary)]" />
+                <h2 className="text-lg font-bold text-[var(--foreground)]">Create Todo List</h2>
+              </div>
+              <button
+                onClick={() => setShowTodoDialog(false)}
+                className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 active:scale-95"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wider mb-2 block">
+                  One item per line
+                </label>
+                <textarea
+                  value={todoInput}
+                  onChange={(e) => setTodoInput(e.target.value)}
+                  placeholder={"Research API documentation\nWrite unit tests\nDeploy to production"}
+                  className="w-full h-32 bg-[var(--muted)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm outline-none resize-none text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-[var(--primary)] transition-colors"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-[var(--muted-foreground)] uppercase tracking-wider mb-2 block">
+                  Priority
+                </label>
+                <div className="flex gap-2">
+                  {(['low', 'medium', 'high'] as const).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setTodoPriority(p)}
+                      className={`flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        todoPriority === p
+                          ? p === 'high' ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                            : p === 'low' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                            : 'bg-[var(--primary)]/20 text-[var(--primary)] border border-[var(--primary)]/30'
+                          : 'bg-[var(--muted)] text-[var(--muted-foreground)] border border-[var(--border)] hover:bg-[var(--muted)]/80'
+                      }`}
+                    >
+                      {p.charAt(0).toUpperCase() + p.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 px-6 py-4 border-t border-[var(--border)]">
+              <button
+                onClick={() => setShowTodoDialog(false)}
+                className="flex-1 px-4 py-2 rounded-lg border border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[var(--muted)] transition-all duration-200 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={createTodo}
+                disabled={!todoInput.trim()}
+                className="flex-1 px-4 py-2 rounded-lg bg-[var(--primary)] text-white hover:bg-[var(--primary)]/90 transition-all duration-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
