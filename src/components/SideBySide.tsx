@@ -54,7 +54,7 @@ export function SideBySide({ apiKey, systemPrompt, onClose }: SideBySideProps) {
 
       let content = '';
       try {
-        const resolved = detectModel(prompt, undefined, model);
+        const resolved = detectModel(prompt, undefined, model).model;
         for await (const chunk of streamChatCompletion(apiKey, [userMsg], resolved, 0.7, 2048, systemPrompt)) {
           if (abort.signal.aborted) break;
           content += chunk;

@@ -1,7 +1,7 @@
 'use client';
 
-import { Message as MessageType } from '@/types';
-import { Copy, Check, RotateCcw, Edit2, ThumbsUp, ThumbsDown, Volume2, VolumeX, Sparkles, FileText, Image as ImageIcon, Wrench } from 'lucide-react';
+import { Message as MessageType, MISTRAL_MODELS, MistralModel } from '@/types';
+import { Copy, Check, RotateCcw, Edit2, ThumbsUp, ThumbsDown, Volume2, VolumeX, Sparkles, FileText, Image as ImageIcon, Wrench, Code, Brain, Zap, Eye } from 'lucide-react';
 import { useState, useRef, useEffect, memo, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -59,6 +59,25 @@ function ToolTagsInline({ content }: { content: string }) {
         <ToolTag key={id} toolId={id!} />
       ))}
     </div>
+  );
+}
+
+function getModelIcon(model: string) {
+  if (model.includes('codestral')) return <Code size={10} />;
+  if (model.includes('large') || model.includes('medium')) return <Brain size={10} />;
+  if (model.includes('pixtral')) return <Eye size={10} />;
+  return <Zap size={10} />;
+}
+
+function ModelBadge({ model, intent }: { model?: string; intent?: string }) {
+  if (!model) return null;
+  const info = MISTRAL_MODELS[model as MistralModel];
+  if (!info || model === 'auto') return null;
+  return (
+    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--muted)] text-[var(--muted-foreground)] border border-[var(--border)] ml-1.5">
+      {getModelIcon(model)}
+      {info.name}
+    </span>
   );
 }
 
@@ -240,8 +259,11 @@ export const Message = memo(function Message({ message, isLatest, isStreaming, o
     <div className="flex justify-start mb-6 animate-message-in">
       <div className="max-w-[85%] group">
         <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-sm ring-1 ring-orange-400/20">
-            <Sparkles size={14} className="text-white" />
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-sm ring-1 ring-orange-400/20">
+              <Sparkles size={14} className="text-white" />
+            </div>
+            <ModelBadge model={message.model} intent={message.intent} />
           </div>
           <div className="flex-1 min-w-0">
             <div className={`bg-[var(--muted)] rounded-2xl rounded-tl-md px-5 py-3.5 transition-all duration-300 ${isStreaming ? 'message-streaming' : 'hover:shadow-sm'}`}>

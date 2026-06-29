@@ -5,12 +5,25 @@ export interface TodoItem {
   priority?: 'high' | 'medium' | 'low';
 }
 
+export type MessageIntent = 
+  | 'quick_chat'
+  | 'code'
+  | 'analysis'
+  | 'creative'
+  | 'greeting'
+  | 'model_change'
+  | 'unknown';
+
+export type ChatTopic = 'general' | 'coding' | 'analysis' | 'creative';
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
   attachments?: Attachment[];
+  model?: ResolvedModel;
+  intent?: MessageIntent;
 }
 
 export interface Attachment {
@@ -31,6 +44,7 @@ export interface Chat {
   updatedAt: Date;
   model: MistralModel;
   todos?: TodoItem[];
+  topic?: ChatTopic;
 }
 
 export type MistralModel = 

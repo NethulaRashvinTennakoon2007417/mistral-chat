@@ -13,9 +13,9 @@ import { UsageDashboard } from '@/components/UsageDashboard';
 import { PromptPresets } from '@/components/PromptPresets';
 import { TodoMessage } from '@/components/TodoMessage';
 import { streamChatCompletion, generateTitle } from '@/lib/mistral';
-import { detectModel } from '@/lib/auto-model';
+import { detectModel, inferTopicFromMessages } from '@/lib/auto-model';
 import { TodoItem } from '@/types';
-import { Message as MessageType, Attachment, MistralModel, ResolvedModel } from '@/types';
+import { Message as MessageType, Attachment, MistralModel, ResolvedModel, ChatTopic } from '@/types';
 import { Menu, Share2, Check, AlertCircle, X, Plus, Sparkles, FileText, Download, Keyboard, ArrowLeftRight, BarChart3, BookOpen, ChevronDown } from 'lucide-react';
 import { stripMarkdown } from '@/lib/utils';
 
@@ -150,9 +150,13 @@ export function ChatInterface() {
 
     if (isGenerating && streamingChatRef.current === chat.id) return;
 
-    // Resolve auto model → actual model
-    const selectedModel = detectModel(content, attachments, chat.model);
+    // Resolve auto model → actual model with intent classification
+    const routing = detectModel(content, attachments, chat.model, chat.topic, chat.messages);
+    const selectedModel = routing.model;
     setResolvedModel(selectedModel);
+
+    // Update chat topic based on conversation flow
+    const newTopic = inferTopicFromMessages([...chat.messages, { id: 'temp', role: 'user', content, timestamp: new Date(), intent: routing.intent }]);
 
     const userMsgId = Math.random().toString(36).substring(2) + Date.now().toString(36);
     const assistantMsgId = Math.random().toString(36).substring(2) + Date.now().toString(36) + '-assistant';
@@ -163,6 +167,8 @@ export function ChatInterface() {
       content,
       attachments,
       timestamp: new Date(),
+      model: selectedModel,
+      intent: routing.intent,
     };
 
     // Auto-open PDF in document viewer
@@ -181,7 +187,7 @@ export function ChatInterface() {
     };
 
     const messagesWithBoth = [...chat.messages, userMsg, assistantMsg];
-    const updatedChat = { ...chat, messages: messagesWithBoth, updatedAt: new Date() };
+    const updatedChat = { ...chat, messages: messagesWithBoth, updatedAt: new Date(), topic: newTopic };
     updateChat(updatedChat);
 
     if (chat.messages.length === 0) {
