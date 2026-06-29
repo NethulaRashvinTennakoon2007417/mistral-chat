@@ -562,29 +562,26 @@ function JSONFormatter() {
 function Base64Tool() {
   const [text, setText] = useState('');
   const [mode, setMode] = useState<'encode' | 'decode'>('encode');
-  const [error, setError] = useState('');
 
-  const process = () => {
+  let result = '';
+  let error = '';
+  if (text) {
     try {
-      setError('');
       if (mode === 'encode') {
-        return btoa(unescape(encodeURIComponent(text)));
+        result = btoa(unescape(encodeURIComponent(text)));
       } else {
-        return decodeURIComponent(escape(atob(text)));
+        result = decodeURIComponent(escape(atob(text)));
       }
     } catch (e: any) {
-      setError('Invalid input for decoding');
-      return '';
+      error = 'Invalid input for decoding';
     }
-  };
-
-  const result = text ? process() : '';
+  }
 
   return (
     <div className="max-w-2xl space-y-4">
       <div className="flex items-center gap-2">
         {(['encode', 'decode'] as const).map((m) => (
-          <button key={m} onClick={() => { setMode(m); setError(''); }} className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${mode === m ? 'bg-[var(--primary)] text-white' : 'bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--border)]'}`}>{m === 'encode' ? 'Encode' : 'Decode'}</button>
+          <button key={m} onClick={() => setMode(m)} className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${mode === m ? 'bg-[var(--primary)] text-white' : 'bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--border)]'}`}>{m === 'encode' ? 'Encode' : 'Decode'}</button>
         ))}
       </div>
       <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={mode === 'encode' ? 'Enter text to encode...' : 'Enter Base64 to decode...'} className={textareaClass} />
@@ -605,25 +602,22 @@ function Base64Tool() {
 function URLEncode() {
   const [text, setText] = useState('');
   const [mode, setMode] = useState<'encode' | 'decode'>('encode');
-  const [error, setError] = useState('');
 
-  const process = () => {
+  let result = '';
+  let error = '';
+  if (text) {
     try {
-      setError('');
-      return mode === 'encode' ? encodeURIComponent(text) : decodeURIComponent(text);
+      result = mode === 'encode' ? encodeURIComponent(text) : decodeURIComponent(text);
     } catch (e: any) {
-      setError('Invalid input');
-      return '';
+      error = 'Invalid input';
     }
-  };
-
-  const result = text ? process() : '';
+  }
 
   return (
     <div className="max-w-2xl space-y-4">
       <div className="flex items-center gap-2">
         {(['encode', 'decode'] as const).map((m) => (
-          <button key={m} onClick={() => { setMode(m); setError(''); }} className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${mode === m ? 'bg-[var(--primary)] text-white' : 'bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--border)]'}`}>{m === 'encode' ? 'Encode' : 'Decode'}</button>
+          <button key={m} onClick={() => setMode(m)} className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${mode === m ? 'bg-[var(--primary)] text-white' : 'bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--border)]'}`}>{m === 'encode' ? 'Encode' : 'Decode'}</button>
         ))}
       </div>
       <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={mode === 'encode' ? 'Enter text to URL encode...' : 'Enter URL-encoded text to decode...'} className={textareaClass} />
@@ -734,12 +728,11 @@ function RegexTester() {
   const [pattern, setPattern] = useState('');
   const [flags, setFlags] = useState('g');
   const [testString, setTestString] = useState('');
-  const [error, setError] = useState('');
 
-  const getMatches = () => {
+  let error = '';
+  const getMatches = (): { match: string; index: number }[] => {
     if (!pattern || !testString) return [];
     try {
-      setError('');
       const regex = new RegExp(pattern, flags);
       const matches: { match: string; index: number }[] = [];
       let m;
@@ -754,7 +747,7 @@ function RegexTester() {
       }
       return matches;
     } catch (e: any) {
-      setError(e.message);
+      error = e.message;
       return [];
     }
   };
@@ -812,23 +805,20 @@ function RegexTester() {
 
 function JWTDecoder() {
   const [token, setToken] = useState('');
-  const [error, setError] = useState('');
 
-  const decode = () => {
+  let error = '';
+  let result: { header: any; payload: any; signature: string } | null = null;
+  if (token.trim()) {
     try {
-      setError('');
       const parts = token.trim().split('.');
       if (parts.length < 2) throw new Error('Invalid JWT format');
       const header = JSON.parse(atob(parts[0].replace(/-/g, '+').replace(/_/g, '/')));
       const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-      return { header, payload, signature: parts[2] || '' };
+      result = { header, payload, signature: parts[2] || '' };
     } catch (e: any) {
-      setError('Invalid JWT token');
-      return null;
+      error = 'Invalid JWT token';
     }
-  };
-
-  const result = token.trim() ? decode() : null;
+  }
 
   return (
     <div className="max-w-2xl space-y-4">
