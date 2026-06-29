@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { ChevronDown, ChevronRight, Circle, CheckCircle2, Loader2, X } from 'lucide-react';
 import { TodoItem } from '@/types';
 
@@ -15,6 +15,10 @@ export function TodoMessage({ todos, chatId, onToggle, onClear }: TodoMessagePro
   const [collapsed, setCollapsed] = useState(false);
   const completedCount = todos.filter(t => t.status === 'completed').length;
   const totalCount = todos.length;
+
+  const handleToggle = useCallback((todoId: string) => {
+    onToggle(todoId);
+  }, [onToggle]);
 
   const getStatusIcon = (status: TodoItem['status']) => {
     switch (status) {
@@ -68,7 +72,7 @@ export function TodoMessage({ todos, chatId, onToggle, onClear }: TodoMessagePro
           {todos.map((todo) => (
             <button
               key={todo.id}
-              onClick={() => onToggle(todo.id)}
+              onClick={() => handleToggle(todo.id)}
               className="w-full flex items-center gap-3 px-4 py-2 hover:bg-[var(--muted)] transition-colors text-left"
             >
               <div className="mt-px">

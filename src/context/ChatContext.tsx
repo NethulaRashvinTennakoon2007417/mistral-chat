@@ -314,6 +314,7 @@ IMPORTANT - Avoiding Hallucination:
   }, []);
 
   const toggleTodo = useCallback((chatId: string, todoId: string) => {
+    let updatedChatRef: Chat | null = null;
     setChats((prev) => {
       const chat = prev.find((c) => c.id === chatId);
       if (!chat || !chat.todos) return prev;
@@ -325,16 +326,14 @@ IMPORTANT - Avoiding Hallucination:
         return t;
       });
       const updatedChat = { ...chat, todos: updatedTodos, updatedAt: new Date() };
+      updatedChatRef = updatedChat;
       saveChat(updatedChat);
-      setCurrentChatState((prevCurrent) => {
-        if (prevCurrent?.id === chatId) {
-          currentChatRef.current = updatedChat;
-          return updatedChat;
-        }
-        return prevCurrent;
-      });
       return prev.map((c) => (c.id === chatId ? updatedChat : c));
     });
+    if (updatedChatRef && currentChatRef.current?.id === chatId) {
+      currentChatRef.current = updatedChatRef;
+      setCurrentChatState(updatedChatRef);
+    }
   }, []);
 
   const clearTodos = useCallback((chatId: string) => {
