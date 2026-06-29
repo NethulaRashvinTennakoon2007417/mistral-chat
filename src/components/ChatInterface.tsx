@@ -167,8 +167,6 @@ export function ChatInterface() {
       content,
       attachments,
       timestamp: new Date(),
-      model: selectedModel,
-      intent: routing.intent,
     };
 
     // Auto-open PDF in document viewer
@@ -184,6 +182,8 @@ export function ChatInterface() {
       role: 'assistant',
       content: '',
       timestamp: new Date(),
+      model: selectedModel,
+      intent: routing.intent,
     };
 
     const messagesWithBoth = [...chat.messages, userMsg, assistantMsg];
