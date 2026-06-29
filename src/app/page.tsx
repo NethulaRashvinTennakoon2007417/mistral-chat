@@ -13,10 +13,28 @@ function AppContent() {
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
 
   useEffect(() => {
-    const handler = (e: CustomEvent) => setSelectedTool(e.detail as string);
-    window.addEventListener('select-tool', handler as EventListener);
-    return () => window.removeEventListener('select-tool', handler as EventListener);
+    const selectHandler = (e: CustomEvent) => setSelectedTool(e.detail as string);
+    const clearHandler = () => setSelectedTool(null);
+    window.addEventListener('select-tool', selectHandler as EventListener);
+    window.addEventListener('clear-tool', clearHandler);
+    return () => {
+      window.removeEventListener('select-tool', selectHandler as EventListener);
+      window.removeEventListener('clear-tool', clearHandler);
+    };
   }, []);
+
+  // Show tools panel if a tool is selected (takes priority over chat)
+  if (selectedTool) {
+    return (
+      <div className="flex h-screen bg-[var(--background)]">
+        <Sidebar />
+        <div className={`flex-1 flex flex-col transition-all duration-300 ease-out ${sidebarOpen ? 'ml-[296px]' : 'ml-0'}`}>
+          <ToolsPanel initialTool={selectedTool as any} onBack={() => setSelectedTool(null)} />
+        </div>
+        <SettingsPanel />
+      </div>
+    );
+  }
 
   // Show chat interface if there's a current chat
   if (currentChat) {
@@ -25,19 +43,6 @@ function AppContent() {
         <Sidebar />
         <div className={`flex-1 flex flex-col transition-all duration-300 ease-out ${sidebarOpen ? 'ml-[296px]' : 'ml-0'}`}>
           <ChatInterface />
-        </div>
-        <SettingsPanel />
-      </div>
-    );
-  }
-
-  // Show tools panel if a tool is selected
-  if (selectedTool) {
-    return (
-      <div className="flex h-screen bg-[var(--background)]">
-        <Sidebar />
-        <div className={`flex-1 flex flex-col transition-all duration-300 ease-out ${sidebarOpen ? 'ml-[296px]' : 'ml-0'}`}>
-          <ToolsPanel initialTool={selectedTool as any} onBack={() => setSelectedTool(null)} />
         </div>
         <SettingsPanel />
       </div>

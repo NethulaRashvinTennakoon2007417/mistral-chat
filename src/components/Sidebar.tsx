@@ -211,7 +211,10 @@ export function Sidebar() {
         {/* Tabs - Chat / Documents / Tools */}
         <div className="flex items-center gap-1 px-3 pt-3 pb-2">
           <button
-            onClick={() => setActiveTab('chat')}
+            onClick={() => {
+              setActiveTab('chat');
+              window.dispatchEvent(new CustomEvent('clear-tool'));
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
               activeTab === 'chat'
                 ? 'bg-[var(--muted)] text-[var(--foreground)]'
@@ -222,7 +225,10 @@ export function Sidebar() {
             Chat
           </button>
           <button
-            onClick={() => setActiveTab('documents')}
+            onClick={() => {
+              setActiveTab('documents');
+              window.dispatchEvent(new CustomEvent('clear-tool'));
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
               activeTab === 'documents'
                 ? 'bg-[var(--muted)] text-[var(--foreground)]'
@@ -361,7 +367,6 @@ export function Sidebar() {
                   <button
                     key={tool.id}
                     onClick={() => {
-                      setCurrentChat(null);
                       window.dispatchEvent(new CustomEvent('select-tool', { detail: tool.id }));
                     }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[var(--foreground)] hover:bg-[var(--muted)] transition-all duration-150 text-left"
@@ -382,7 +387,10 @@ export function Sidebar() {
         <div className="border-t border-[var(--border)] p-3">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => setCurrentChat(null)}
+              onClick={() => {
+                setCurrentChat(null);
+                window.dispatchEvent(new CustomEvent('clear-tool'));
+              }}
               className="flex items-center gap-2.5 hover:opacity-80 transition-all duration-200 active:scale-95"
             >
               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
