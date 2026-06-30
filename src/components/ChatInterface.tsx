@@ -13,6 +13,7 @@ import { UsageDashboard } from '@/components/UsageDashboard';
 import { PromptPresets } from '@/components/PromptPresets';
 import { TodoMessage } from '@/components/TodoMessage';
 import { BrowserPanel } from '@/components/BrowserPanel';
+import { RealBrowserPanel } from '@/components/RealBrowserPanel';
 import { streamChatCompletion, generateTitle } from '@/lib/mistral';
 import { detectModel, inferTopicFromMessages } from '@/lib/auto-model';
 import { formatPageForPrompt } from '@/lib/browser';
@@ -85,6 +86,35 @@ export function ChatInterface() {
   const [showSideBySide, setShowSideBySide] = useState(false);
   const [showUsageDashboard, setShowUsageDashboard] = useState(false);
   const [showPromptPresets, setShowPromptPresets] = useState(false);
+  const [browserServerAvailable, setBrowserServerAvailable] = useState(false);
+
+  // Check if browser server is available
+  useEffect(() => {
+    const checkServer = async () => {
+      try {
+        const wsUrl = `ws://${window.location.hostname}:3001`;
+        const ws = new WebSocket(wsUrl);
+        const timeout = setTimeout(() => {
+          ws.close();
+          setBrowserServerAvailable(false);
+        }, 3000);
+        ws.onopen = () => {
+          clearTimeout(timeout);
+          setBrowserServerAvailable(true);
+          ws.close();
+        };
+        ws.onerror = () => {
+          clearTimeout(timeout);
+          setBrowserServerAvailable(false);
+        };
+      } catch {
+        setBrowserServerAvailable(false);
+      }
+    };
+    checkServer();
+    const interval = setInterval(checkServer, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     currentChatRef.current = currentChat;
@@ -732,21 +762,31 @@ export function ChatInterface() {
       {/* Browser Panel */}
       {browserOpen && (
         <div className="w-[45%] flex-shrink-0">
-          <BrowserPanel
-            url={browserUrl}
-            page={browserPage}
-            loading={browserLoading}
-            error={browserError}
-            onUrlChange={setBrowserUrl}
-            onNavigate={handleBrowserNavigate}
-            onPageLoad={handleBrowserPageLoad}
-            onLoading={setBrowserLoading}
-            onError={setBrowserError}
-            onReadPage={handleReadPage}
-            onSummarizePage={handleSummarizePage}
-            onAskAboutPage={handleAskAboutPage}
-            onClose={() => setBrowserOpen(false)}
-          />
+          {browserServerAvailable ? (
+            <RealBrowserPanel
+              onReadPage={handleReadPage}
+              onSummarizePage={handleSummarizePage}
+              onAskAboutPage={handleAskAboutPage}
+              onClose={() => setBrowserOpen(false)}
+              onPageLoad={handleBrowserPageLoad}
+            />
+          ) : (
+            <BrowserPanel
+              url={browserUrl}
+              page={browserPage}
+              loading={browserLoading}
+              error={browserError}
+              onUrlChange={setBrowserUrl}
+              onNavigate={handleBrowserNavigate}
+              onPageLoad={handleBrowserPageLoad}
+              onLoading={setBrowserLoading}
+              onError={setBrowserError}
+              onReadPage={handleReadPage}
+              onSummarizePage={handleSummarizePage}
+              onAskAboutPage={handleAskAboutPage}
+              onClose={() => setBrowserOpen(false)}
+            />
+          )}
         </div>
       )}
 
