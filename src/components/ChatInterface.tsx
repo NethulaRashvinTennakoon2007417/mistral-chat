@@ -94,7 +94,8 @@ export function ChatInterface() {
       try {
         const res = await fetch('/api/browser', { method: 'GET' });
         if (res.ok) {
-          setBrowserServerAvailable(true);
+          const data = await res.json();
+          setBrowserServerAvailable(data.available === true);
         } else {
           setBrowserServerAvailable(false);
         }

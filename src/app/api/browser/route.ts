@@ -1,20 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
 
-interface Session {
-  browser: Browser;
-  context: BrowserContext;
-  page: Page;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyBrowser = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyContext = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyPage = any;
+
+interface SessionData {
+  browser: AnyBrowser;
+  context: AnyContext;
+  page: AnyPage;
   lastAccess: number;
   url: string;
   title: string;
 }
 
 const SESSION_TTL = 30_000;
-const sessions = new Map<string, Session>();
+const sessions = new Map<string, SessionData>();
+
+let playwrightAvailable: boolean | null = null;
+
+async function getPlaywright() {
+  if (playwrightAvailable === false) return null;
+  try {
+    const pw = await import('playwright');
+    playwrightAvailable = true;
+    return pw;
+  } catch {
+    playwrightAvailable = false;
+    return null;
+  }
+}
 
 function cleanupExpired() {
   const now = Date.now();
@@ -26,7 +46,7 @@ function cleanupExpired() {
   }
 }
 
-async function getSession(sessionId: string): Promise<Session | undefined> {
+function getSession(sessionId: string): SessionData | undefined {
   cleanupExpired();
   const session = sessions.get(sessionId);
   if (session) {
@@ -36,9 +56,12 @@ async function getSession(sessionId: string): Promise<Session | undefined> {
   return undefined;
 }
 
-async function createSession(sessionId: string): Promise<Session> {
+async function createSession(sessionId: string): Promise<SessionData> {
+  const pw = await getPlaywright();
+  if (!pw) throw new Error('Playwright not available on this server');
+
   cleanupExpired();
-  const browser = await chromium.launch({
+  const browser = await pw.chromium.launch({
     headless: true,
     args: [
       '--no-sandbox',
@@ -53,7 +76,7 @@ async function createSession(sessionId: string): Promise<Session> {
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   });
   const page = await context.newPage();
-  const session: Session = {
+  const session: SessionData = {
     browser,
     context,
     page,
@@ -65,7 +88,7 @@ async function createSession(sessionId: string): Promise<Session> {
   return session;
 }
 
-async function takeScreenshot(page: Page): Promise<string> {
+async function takeScreenshot(page: AnyPage): Promise<string> {
   const buf = await page.screenshot({
     type: 'jpeg',
     quality: 80,
@@ -74,7 +97,7 @@ async function takeScreenshot(page: Page): Promise<string> {
   return buf.toString('base64');
 }
 
-async function extractPageContent(page: Page) {
+async function extractPageContent(page: AnyPage) {
   return page.evaluate(() => {
     const headings: string[] = [];
     document.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((el) => {
@@ -115,7 +138,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing sessionId or action' }, { status: 400 });
     }
 
-    let session = await getSession(sessionId);
+    const pw = await getPlaywright();
+    if (!pw) {
+      return NextResponse.json({ error: 'Playwright not available on this server', available: false }, { status: 503 });
+    }
+
+    let session = getSession(sessionId);
 
     switch (action) {
       case 'init':
@@ -126,11 +154,7 @@ export async function POST(request: NextRequest) {
         session.url = session.page.url();
         session.title = await session.page.title();
         const screenshot = await takeScreenshot(session.page);
-        return NextResponse.json({
-          screenshot,
-          url: session.url,
-          title: session.title,
-        });
+        return NextResponse.json({ screenshot, url: session.url, title: session.title, available: true });
       }
 
       case 'click': {
@@ -141,7 +165,7 @@ export async function POST(request: NextRequest) {
         session.url = session.page.url();
         session.title = await session.page.title();
         const screenshot = await takeScreenshot(session.page);
-        return NextResponse.json({ screenshot, url: session.url, title: session.title });
+        return NextResponse.json({ screenshot, url: session.url, title: session.title, available: true });
       }
 
       case 'dblclick': {
@@ -152,26 +176,26 @@ export async function POST(request: NextRequest) {
         session.url = session.page.url();
         session.title = await session.page.title();
         const screenshot = await takeScreenshot(session.page);
-        return NextResponse.json({ screenshot, url: session.url, title: session.title });
+        return NextResponse.json({ screenshot, url: session.url, title: session.title, available: true });
       }
 
       case 'mousemove': {
         if (x === undefined || y === undefined) return NextResponse.json({ error: 'Missing x,y' }, { status: 400 });
         if (!session) return NextResponse.json({ error: 'No active session' }, { status: 400 });
         await session.page.mouse.move(x, y);
-        return NextResponse.json({ ok: true });
+        return NextResponse.json({ ok: true, available: true });
       }
 
       case 'mousedown': {
         if (!session) return NextResponse.json({ error: 'No active session' }, { status: 400 });
         await session.page.mouse.down({ button: (button as 'left' | 'right' | 'middle') || 'left' });
-        return NextResponse.json({ ok: true });
+        return NextResponse.json({ ok: true, available: true });
       }
 
       case 'mouseup': {
         if (!session) return NextResponse.json({ error: 'No active session' }, { status: 400 });
         await session.page.mouse.up({ button: (button as 'left' | 'right' | 'middle') || 'left' });
-        return NextResponse.json({ ok: true });
+        return NextResponse.json({ ok: true, available: true });
       }
 
       case 'wheel': {
@@ -179,7 +203,7 @@ export async function POST(request: NextRequest) {
         await session.page.mouse.wheel(deltaX || 0, deltaY || 0);
         await session.page.waitForTimeout(200).catch(() => {});
         const screenshot = await takeScreenshot(session.page);
-        return NextResponse.json({ screenshot, url: session.url, title: session.title });
+        return NextResponse.json({ screenshot, url: session.url, title: session.title, available: true });
       }
 
       case 'keydown': {
@@ -201,14 +225,14 @@ export async function POST(request: NextRequest) {
         session.url = session.page.url();
         session.title = await session.page.title();
         const screenshot = await takeScreenshot(session.page);
-        return NextResponse.json({ screenshot, url: session.url, title: session.title });
+        return NextResponse.json({ screenshot, url: session.url, title: session.title, available: true });
       }
 
       case 'type': {
         if (!text) return NextResponse.json({ error: 'Missing text' }, { status: 400 });
         if (!session) return NextResponse.json({ error: 'No active session' }, { status: 400 });
         await session.page.keyboard.type(text, { delay: 30 });
-        return NextResponse.json({ ok: true });
+        return NextResponse.json({ ok: true, available: true });
       }
 
       case 'back': {
@@ -217,7 +241,7 @@ export async function POST(request: NextRequest) {
         session.url = session.page.url();
         session.title = await session.page.title();
         const screenshot = await takeScreenshot(session.page);
-        return NextResponse.json({ screenshot, url: session.url, title: session.title });
+        return NextResponse.json({ screenshot, url: session.url, title: session.title, available: true });
       }
 
       case 'forward': {
@@ -226,7 +250,7 @@ export async function POST(request: NextRequest) {
         session.url = session.page.url();
         session.title = await session.page.title();
         const screenshot = await takeScreenshot(session.page);
-        return NextResponse.json({ screenshot, url: session.url, title: session.title });
+        return NextResponse.json({ screenshot, url: session.url, title: session.title, available: true });
       }
 
       case 'reload': {
@@ -235,13 +259,13 @@ export async function POST(request: NextRequest) {
         session.url = session.page.url();
         session.title = await session.page.title();
         const screenshot = await takeScreenshot(session.page);
-        return NextResponse.json({ screenshot, url: session.url, title: session.title });
+        return NextResponse.json({ screenshot, url: session.url, title: session.title, available: true });
       }
 
       case 'screenshot': {
         if (!session) return NextResponse.json({ error: 'No active session' }, { status: 400 });
         const screenshot = await takeScreenshot(session.page);
-        return NextResponse.json({ screenshot, url: session.url, title: session.title });
+        return NextResponse.json({ screenshot, url: session.url, title: session.title, available: true });
       }
 
       case 'extract': {
@@ -249,14 +273,14 @@ export async function POST(request: NextRequest) {
         const content = await extractPageContent(session.page);
         session.url = content.url;
         session.title = content.title;
-        return NextResponse.json({ ...content });
+        return NextResponse.json({ ...content, available: true });
       }
 
       case 'resize': {
         if (!session) return NextResponse.json({ error: 'No active session' }, { status: 400 });
         await session.page.setViewportSize({ width: width || 1280, height: height || 720 });
         const screenshot = await takeScreenshot(session.page);
-        return NextResponse.json({ screenshot, url: session.url, title: session.title });
+        return NextResponse.json({ screenshot, url: session.url, title: session.title, available: true });
       }
 
       case 'close': {
@@ -264,7 +288,7 @@ export async function POST(request: NextRequest) {
           await session.browser.close().catch(() => {});
           sessions.delete(sessionId);
         }
-        return NextResponse.json({ ok: true });
+        return NextResponse.json({ ok: true, available: true });
       }
 
       default:
@@ -277,6 +301,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
+  const pw = await getPlaywright();
   cleanupExpired();
-  return NextResponse.json({ status: 'ok', sessions: sessions.size });
+  return NextResponse.json({
+    status: 'ok',
+    sessions: sessions.size,
+    available: pw !== null,
+  });
 }
