@@ -352,23 +352,41 @@ export function BrowserPanel({
           </div>
         )}
 
-        {/* Iframe error fallback */}
-        {iframeError && !loading && !error && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--background)]">
-            <div className="flex flex-col items-center gap-3 text-center px-8">
-              <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
-                <AlertCircle size={24} className="text-amber-500" />
-              </div>
-              <p className="text-sm font-medium text-[var(--foreground)]">Page blocked from iframe</p>
-              <p className="text-xs text-[var(--muted-foreground)] max-w-[280px]">
-                This page prevents iframe embedding. We&apos;ve extracted the content via proxy instead.
-              </p>
+        {/* Iframe error fallback — show screenshot */}
+        {iframeError && !loading && !error && url && (
+          <div className="absolute inset-0 z-10 flex flex-col bg-[var(--background)]">
+            <div className="flex-1 overflow-auto flex items-start justify-center p-4">
+              <img
+                src={`https://image.thum.io/get/width/1200/crop/900/${url}`}
+                alt={`Screenshot of ${url}`}
+                className="max-w-full rounded-lg shadow-lg border border-[var(--border)]"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  const parent = (e.target as HTMLImageElement).parentElement;
+                  if (parent) {
+                    const msg = document.createElement('div');
+                    msg.className = 'flex flex-col items-center gap-3 text-center px-8 py-12';
+                    msg.innerHTML = `
+                      <div class="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      </div>
+                      <p class="text-sm font-medium">Screenshot unavailable</p>
+                      <p class="text-xs text-[var(--muted-foreground)] max-w-[280px]">This page blocks external access. Open it in a new tab to view.</p>
+                    `;
+                    parent.appendChild(msg);
+                  }
+                }}
+              />
+            </div>
+            <div className="flex items-center justify-center gap-2 px-3 py-2 border-t border-[var(--border)] bg-[var(--background)]">
+              <p className="text-[10px] text-[var(--muted-foreground)]">Preview (screenshot)</p>
+              <div className="w-px h-3 bg-[var(--border)]" />
               <button
                 onClick={() => window.open(url, '_blank')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--primary)]/10 text-xs font-medium text-[var(--foreground)] transition-all duration-200 active:scale-95"
+                className="flex items-center gap-1 text-[10px] text-[var(--primary)] hover:underline"
               >
-                <ExternalLink size={12} />
-                Open in new tab
+                <ExternalLink size={10} />
+                Open full site
               </button>
             </div>
           </div>
