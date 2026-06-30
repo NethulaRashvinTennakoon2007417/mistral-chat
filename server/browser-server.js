@@ -1,15 +1,28 @@
 const { WebSocketServer } = require('ws');
 const { chromium } = require('playwright');
+const http = require('http');
 
-const PORT = process.env.BROWSER_PORT || 3001;
-const SCREENSHOT_INTERVAL = 100; // ms between screenshots (~10fps)
+const PORT = process.env.PORT || 3001;
+const SCREENSHOT_INTERVAL = 100;
 const MAX_QUALITY = 80;
 const VIEWPORT_WIDTH = 1280;
 const VIEWPORT_HEIGHT = 720;
 
-const wss = new WebSocketServer({ port: PORT });
+const server = http.createServer((req, res) => {
+  if (req.url === '/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok' }));
+  } else {
+    res.writeHead(404);
+    res.end();
+  }
+});
 
-console.log(`[Browser Server] Listening on ws://localhost:${PORT}`);
+const wss = new WebSocketServer({ server });
+
+server.listen(PORT, () => {
+  console.log(`[Browser Server] Listening on port ${PORT}`);
+});
 
 wss.on('connection', async (ws) => {
   console.log('[Browser Server] Client connected');
@@ -37,14 +50,12 @@ wss.on('connection', async (ws) => {
 
     page = await context.newPage();
 
-    // Handle console messages from the page
     page.on('console', (msg) => {
       if (ws.readyState === 1) {
         ws.send(JSON.stringify({ type: 'console', level: msg.type(), text: msg.text() }));
       }
     });
 
-    // Start streaming screenshots
     const startScreenshots = () => {
       if (screenshotTimer) clearInterval(screenshotTimer);
       screenshotTimer = setInterval(async () => {
@@ -62,7 +73,6 @@ wss.on('connection', async (ws) => {
       }, SCREENSHOT_INTERVAL);
     };
 
-    // Handle messages from client
     ws.on('message', async (raw) => {
       let msg;
       try {
@@ -78,7 +88,6 @@ wss.on('connection', async (ws) => {
           case 'navigate': {
             currentPageUrl = msg.url;
             await page.goto(msg.url, { waitUntil: 'domcontentloaded', timeout: 15000 });
-            // Send page info back
             const title = await page.title();
             const url = page.url();
             ws.send(JSON.stringify({ type: 'pageinfo', title, url }));
@@ -152,7 +161,6 @@ wss.on('connection', async (ws) => {
           }
 
           case 'extract': {
-            // Extract page text content for AI context
             const content = await page.evaluate(() => {
               const headings = [];
               document.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((el) => {
@@ -210,15 +218,12 @@ wss.on('connection', async (ws) => {
       if (browser) await browser.close().catch(() => {});
     });
 
-    // Send ready signal
     ws.send(JSON.stringify({ type: 'ready' }));
 
-    // Navigate to default page
     await page.goto('https://www.google.com', { waitUntil: 'domcontentloaded', timeout: 15000 });
     const title = await page.title();
     ws.send(JSON.stringify({ type: 'pageinfo', title, url: page.url() }));
 
-    // Start streaming
     startScreenshots();
 
   } catch (err) {

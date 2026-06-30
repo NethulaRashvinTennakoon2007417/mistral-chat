@@ -88,9 +88,24 @@ export function ChatInterface() {
   const [showPromptPresets, setShowPromptPresets] = useState(false);
   const [browserServerAvailable, setBrowserServerAvailable] = useState(false);
 
-  // Check if browser API is available
+  // Check if browser server is available (WebSocket remote or HTTP API)
   useEffect(() => {
+    const wsUrl = process.env.NEXT_PUBLIC_BROWSER_WS_URL;
+
     const checkServer = async () => {
+      // If remote WebSocket server is configured, check its /health endpoint
+      if (wsUrl) {
+        try {
+          const healthUrl = wsUrl.replace(/^ws/, 'http') + '/health';
+          const res = await fetch(healthUrl, { signal: AbortSignal.timeout(5000) });
+          setBrowserServerAvailable(res.ok);
+        } catch {
+          setBrowserServerAvailable(false);
+        }
+        return;
+      }
+
+      // Otherwise check the /api/browser HTTP endpoint
       try {
         const res = await fetch('/api/browser', { method: 'GET' });
         if (res.ok) {
