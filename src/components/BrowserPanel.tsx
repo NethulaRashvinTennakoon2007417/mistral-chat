@@ -168,7 +168,16 @@ export function BrowserPanel({
           }
         }
       } catch {
-        // Cross-origin, fall through to proxy
+        // Cross-origin — show screenshot fallback, fetch text via proxy
+        onLoading(false);
+        setIframeError(true);
+        try {
+          const extracted = await fetchAndExtract(currentUrl);
+          onPageLoad(extracted);
+        } catch {
+          // Proxy also failed
+        }
+        return;
       }
     }
 
@@ -223,7 +232,14 @@ export function BrowserPanel({
             }
           }
         } catch {
-          // Cross-origin — can't access DOM
+          // Cross-origin — show screenshot fallback
+          clearInterval(interval);
+          setIframeError(true);
+          onLoading(false);
+          fetchAndExtract(url).then((extracted) => {
+            onPageLoad(extracted);
+          }).catch(() => {});
+          return;
         }
       }
       if (attempts >= 10) {
