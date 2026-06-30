@@ -7,7 +7,7 @@ import {
   Sparkles, Search, CheckCircle2,
 } from 'lucide-react';
 import { BrowserPage } from '@/types';
-import { normalizeUrl, fetchAndExtract } from '@/lib/browser';
+import { normalizeUrl, fetchAndExtract, extractFromIframe } from '@/lib/browser';
 
 interface BrowserPanelProps {
   url: string;
@@ -108,12 +108,26 @@ export function BrowserPanel({
   const handleIframeLoad = useCallback(async () => {
     setIframeError(false);
 
+    // Try same-origin DOM access first
+    const iframe = iframeRef.current;
+    if (iframe) {
+      const extracted = extractFromIframe(iframe, url);
+      if (extracted && extracted.paragraphs.length > 0) {
+        onLoading(false);
+        onPageLoad(extracted);
+        return;
+      }
+    }
+
+    // Fallback: fetch via CORS proxy chain
     try {
       const extracted = await fetchAndExtract(url);
-      onPageLoad(extracted);
-    } catch (err) {
       onLoading(false);
-      onError(err instanceof Error ? err.message : 'Page loaded, but content extraction failed');
+      onPageLoad(extracted);
+    } catch {
+      onLoading(false);
+      setIframeError(true);
+      onError('This page could not be loaded. It may block external access. Try opening it in a new tab.');
     }
   }, [url, onPageLoad, onLoading, onError]);
 
@@ -126,8 +140,8 @@ export function BrowserPanel({
         setIframeError(false);
         onPageLoad(extracted);
       })
-      .catch((err) => {
-        onError(err instanceof Error ? err.message : 'Failed to load page');
+      .catch(() => {
+        onError('This page could not be loaded. It may block external access. Try opening it in a new tab.');
       });
   };
 

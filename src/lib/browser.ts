@@ -1,13 +1,10 @@
 import { BrowserPage } from '@/types';
 
 const CORS_PROXIES = [
-  'https://api.allorigins.win/raw?url=',
-  'https://corsproxy.io/?',
+  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
 ];
-
-function buildProxyUrl(url: string): string {
-  return `${CORS_PROXIES[0]}${encodeURIComponent(url)}`;
-}
 
 function extractFromHtml(html: string, url: string): BrowserPage {
   const parser = new DOMParser();
@@ -97,13 +94,43 @@ export function extractFromIframe(iframe: HTMLIFrameElement, url: string): Brows
   }
 }
 
-export async function fetchAndExtract(url: string): Promise<BrowserPage> {
-  const proxyUrl = buildProxyUrl(url);
-  const response = await fetch(proxyUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch page: ${response.status} ${response.statusText}`);
+async function tryFetchViaProxy(url: string): Promise<string> {
+  let lastError: Error | null = null;
+
+  for (const buildProxy of CORS_PROXIES) {
+    try {
+      const proxyUrl = buildProxy(url);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
+      const response = await fetch(proxyUrl, { signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        lastError = new Error(`Proxy returned ${response.status}`);
+        continue;
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      const html = await response.text();
+
+      if (html.length < 100) {
+        lastError = new Error('Empty response from proxy');
+        continue;
+      }
+
+      return html;
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      continue;
+    }
   }
-  const html = await response.text();
+
+  throw lastError || new Error('All CORS proxies failed');
+}
+
+export async function fetchAndExtract(url: string): Promise<BrowserPage> {
+  const html = await tryFetchViaProxy(url);
   return extractFromHtml(html, url);
 }
 
