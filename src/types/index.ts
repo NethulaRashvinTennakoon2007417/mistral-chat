@@ -1,8 +1,10 @@
 export interface TodoItem {
   id: string;
+  chatId: string;
   text: string;
   status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   priority?: 'high' | 'medium' | 'low';
+  createdAt: Date;
 }
 
 export type MessageIntent = 
@@ -71,6 +73,15 @@ export const MISTRAL_MODELS: Record<MistralModel, { name: string; description: s
 };
 
 export type ResolvedModel = Exclude<MistralModel, 'auto'>;
+
+export interface BrowserPage {
+  url: string;
+  title: string;
+  headings: string[];
+  paragraphs: string[];
+  links: { text: string; href: string }[];
+  extractedAt: Date;
+}
 
 export interface Settings {
   apiKey: string;

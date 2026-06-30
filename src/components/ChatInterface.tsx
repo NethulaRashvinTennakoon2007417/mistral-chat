@@ -12,11 +12,13 @@ import { SideBySide } from '@/components/SideBySide';
 import { UsageDashboard } from '@/components/UsageDashboard';
 import { PromptPresets } from '@/components/PromptPresets';
 import { TodoMessage } from '@/components/TodoMessage';
+import { BrowserPanel } from '@/components/BrowserPanel';
 import { streamChatCompletion, generateTitle } from '@/lib/mistral';
 import { detectModel, inferTopicFromMessages } from '@/lib/auto-model';
-import { TodoItem } from '@/types';
+import { formatPageForPrompt } from '@/lib/browser';
+import { TodoItem, BrowserPage } from '@/types';
 import { Message as MessageType, Attachment, MistralModel, ResolvedModel, ChatTopic } from '@/types';
-import { Menu, Share2, Check, AlertCircle, X, Plus, Sparkles, FileText, Download, Keyboard, ArrowLeftRight, BarChart3, BookOpen, ChevronDown } from 'lucide-react';
+import { Menu, Share2, Check, AlertCircle, X, Plus, Sparkles, FileText, Download, Keyboard, ArrowLeftRight, BarChart3, BookOpen, ChevronDown, Globe } from 'lucide-react';
 import { stripMarkdown } from '@/lib/utils';
 
 function getGreeting() {
@@ -52,7 +54,21 @@ export function ChatInterface() {
     updateSettings,
     setTodos,
     toggleTodo,
+    updateTodo,
+    deleteTodo,
     clearTodos,
+    browserOpen,
+    browserUrl,
+    browserPage,
+    browserLoading,
+    browserError,
+    browserActive,
+    setBrowserOpen,
+    setBrowserUrl,
+    setBrowserPage,
+    setBrowserLoading,
+    setBrowserError,
+    setBrowserActive,
   } = useChat();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -104,20 +120,26 @@ export function ChatInterface() {
         setShowSideBySide(false);
         setShowUsageDashboard(false);
         setShowPromptPresets(false);
+        if (browserOpen) setBrowserOpen(false);
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [toggleSidebar, createNewChat]);
 
-  const getSystemPrompt = useCallback(() => {
+  const getSystemPrompt = useCallback((browserContextOverride?: BrowserPage | null) => {
     const parts: string[] = [];
+    const pageContext = browserContextOverride || (browserActive ? browserPage : null);
+
     if (settings.systemPrompt) parts.push(settings.systemPrompt);
     if (settings.memories && settings.memories.length > 0) {
-      parts.push(`\nFacts about the user (remember these across conversations):\n${settings.memories.map(m => `- ${m}`).join('\n')}`);
+      parts.push('\nFacts about the user (remember these across conversations):\n' + settings.memories.map((m) => '- ' + m).join('\n'));
+    }
+    if (pageContext) {
+      parts.push('\nThe user has a browser panel open with the following page content. Use this as context when answering their questions:\n\n' + formatPageForPrompt(pageContext));
     }
     return parts.length > 0 ? parts.join('\n') : undefined;
-  }, [settings.systemPrompt, settings.memories]);
+  }, [settings.systemPrompt, settings.memories, browserActive, browserPage]);
 
   const handleCanvasToggle = useCallback(() => {
     if (documentAttachment) {
@@ -137,7 +159,7 @@ export function ChatInterface() {
     }
   }, [documentAttachment, currentChat, closeDocument, openDocument]);
 
-  const handleSend = async (content: string, attachments?: Attachment[]) => {
+  const handleSend = async (content: string, attachments?: Attachment[], options?: { browserContext?: BrowserPage | null }) => {
     if (!settings.apiKey) {
       toggleSettings();
       return;
@@ -230,7 +252,7 @@ export function ChatInterface() {
         selectedModel,
         settings.temperature,
         settings.maxTokens,
-        getSystemPrompt()
+        getSystemPrompt(options?.browserContext)
       )) {
         if (abortControllerRef.current?.signal.aborted) break;
 
@@ -268,26 +290,34 @@ export function ChatInterface() {
           const lines = blockMatch[1].split('\n').filter(l => l.trim().startsWith('- '));
           todos = lines.map((line, i) => ({
             id: `todo-${Date.now()}-${i}`,
+            chatId: currentChat.id,
             text: line.replace(/^-\s*/, '').trim(),
             status: 'pending' as const,
+            createdAt: new Date(),
           }));
         } else if (inlineMatches.length > 0) {
           todos = inlineMatches.map((m, i) => ({
             id: `todo-${Date.now()}-${i}`,
+            chatId: currentChat.id,
             text: m[1].trim(),
             status: 'pending' as const,
+            createdAt: new Date(),
           }));
         } else if (checkboxMatches.length >= 3) {
           todos = checkboxMatches.map((m, i) => ({
             id: `todo-${Date.now()}-${i}`,
+            chatId: currentChat.id,
             text: m[1].trim(),
             status: 'pending' as const,
+            createdAt: new Date(),
           }));
         } else if (emojiMatches.length >= 3) {
           todos = emojiMatches.map((m, i) => ({
             id: `todo-${Date.now()}-${i}`,
+            chatId: currentChat.id,
             text: m[1].trim(),
             status: 'pending' as const,
+            createdAt: new Date(),
           }));
         }
 
@@ -425,6 +455,34 @@ export function ChatInterface() {
     }
   }, [updateChat]);
 
+  const handleBrowserNavigate = useCallback((newUrl: string) => {
+    setBrowserUrl(newUrl);
+    setBrowserLoading(true);
+    setBrowserError(null);
+    setBrowserPage(null);
+  }, [setBrowserUrl, setBrowserLoading, setBrowserError, setBrowserPage]);
+
+  const handleBrowserPageLoad = useCallback((pageData: BrowserPage) => {
+    setBrowserPage(pageData);
+    setBrowserLoading(false);
+    setBrowserError(null);
+  }, [setBrowserPage, setBrowserLoading, setBrowserError]);
+
+  const handleReadPage = useCallback(() => {
+    setBrowserActive(true);
+    handleSend(`Read the current page (${browserPage?.title || browserUrl}) and tell me what it's about.`, undefined, { browserContext: browserPage });
+  }, [browserPage, browserUrl, handleSend, setBrowserActive]);
+
+  const handleSummarizePage = useCallback(() => {
+    setBrowserActive(true);
+    handleSend(`Summarize the content of the page I'm viewing: ${browserPage?.title || browserUrl}`, undefined, { browserContext: browserPage });
+  }, [browserPage, browserUrl, handleSend, setBrowserActive]);
+
+  const handleAskAboutPage = useCallback(() => {
+    setBrowserActive(true);
+    // Just activate context — user can type their own question
+  }, [setBrowserActive]);
+
   const hasMessages = currentChat && currentChat.messages.length > 0;
 
   return (
@@ -474,6 +532,17 @@ export function ChatInterface() {
               title="API Usage"
             >
               <BarChart3 size={16} />
+            </button>
+            <button
+              onClick={() => setBrowserOpen(!browserOpen)}
+              className={`flex items-center justify-center w-8 h-8 rounded-md transition-all duration-200 active:scale-90 ${
+                browserOpen
+                  ? 'bg-[var(--primary)] text-white'
+                  : 'hover:bg-[var(--muted)] text-[var(--muted-foreground)]'
+              }`}
+              title={browserOpen ? 'Close Browser' : 'Open Browser'}
+            >
+              <Globe size={16} />
             </button>
             <button
               onClick={() => createNewChat()}
@@ -604,12 +673,29 @@ export function ChatInterface() {
       {hasMessages && (
         <div className="border-t border-[var(--background)] bg-[var(--background)]">
           <div className="max-w-3xl mx-auto">
+            {browserActive && browserPage && (
+              <div className="flex items-center gap-2 px-4 pt-3">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--primary)]/10 border border-[var(--primary)]/20 text-[var(--primary)] text-xs font-medium">
+                  <Globe size={11} />
+                  Browser context active
+                  <span className="text-[10px] opacity-70">({browserPage.title})</span>
+                </div>
+                <button
+                  onClick={() => setBrowserActive(false)}
+                  className="text-[10px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
+                >
+                  Disable
+                </button>
+              </div>
+            )}
             {currentChat?.todos && currentChat.todos.length > 0 && (
               <div className="px-4 pt-3">
                 <TodoMessage
                   todos={currentChat.todos}
                   chatId={currentChat.id}
                   onToggle={(todoId) => toggleTodo(currentChat.id, todoId)}
+                  onUpdate={(todoId, text) => updateTodo(currentChat.id, todoId, text)}
+                  onDelete={(todoId) => deleteTodo(currentChat.id, todoId)}
                   onClear={() => clearTodos(currentChat.id)}
                 />
               </div>
@@ -639,6 +725,27 @@ export function ChatInterface() {
             fileName={documentAttachment.name}
             fileData={documentAttachment.url}
             onClose={closeDocument}
+          />
+        </div>
+      )}
+
+      {/* Browser Panel */}
+      {browserOpen && (
+        <div className="w-[45%] flex-shrink-0">
+          <BrowserPanel
+            url={browserUrl}
+            page={browserPage}
+            loading={browserLoading}
+            error={browserError}
+            onUrlChange={setBrowserUrl}
+            onNavigate={handleBrowserNavigate}
+            onPageLoad={handleBrowserPageLoad}
+            onLoading={setBrowserLoading}
+            onError={setBrowserError}
+            onReadPage={handleReadPage}
+            onSummarizePage={handleSummarizePage}
+            onAskAboutPage={handleAskAboutPage}
+            onClose={() => setBrowserOpen(false)}
           />
         </div>
       )}

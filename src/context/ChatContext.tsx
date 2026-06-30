@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { Chat, Message, MistralModel, Settings, Attachment, TodoItem } from '@/types';
+import { Chat, Message, MistralModel, Settings, Attachment, TodoItem, BrowserPage } from '@/types';
 import { getChats, saveChat, deleteChat, getSettings, saveSettings } from '@/lib/storage';
 import { generateId } from '@/lib/utils';
 
@@ -24,6 +24,8 @@ interface ChatContextType {
   updateMessage: (chatId: string, messageId: string, content: string) => void;
   setTodos: (chatId: string, todos: TodoItem[]) => void;
   toggleTodo: (chatId: string, todoId: string) => void;
+  updateTodo: (chatId: string, todoId: string, text: string) => void;
+  deleteTodo: (chatId: string, todoId: string) => void;
   clearTodos: (chatId: string) => void;
   setIsGenerating: (value: boolean) => void;
   updateSettings: (settings: Partial<Settings>) => void;
@@ -32,6 +34,18 @@ interface ChatContextType {
   toggleSettings: () => void;
   openDocument: (attachment: Attachment) => void;
   closeDocument: () => void;
+  browserOpen: boolean;
+  browserUrl: string;
+  browserPage: BrowserPage | null;
+  browserLoading: boolean;
+  browserError: string | null;
+  browserActive: boolean;
+  setBrowserOpen: (open: boolean) => void;
+  setBrowserUrl: (url: string) => void;
+  setBrowserPage: (page: BrowserPage | null) => void;
+  setBrowserLoading: (loading: boolean) => void;
+  setBrowserError: (error: string | null) => void;
+  setBrowserActive: (active: boolean) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -146,6 +160,12 @@ IMPORTANT - Avoiding Hallucination:
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [documentAttachment, setDocumentAttachment] = useState<Attachment | null>(null);
   const [canvasOpen, setCanvasOpen] = useState(false);
+  const [browserOpen, setBrowserOpen] = useState(false);
+  const [browserUrl, setBrowserUrl] = useState('https://');
+  const [browserPage, setBrowserPage] = useState<BrowserPage | null>(null);
+  const [browserLoading, setBrowserLoading] = useState(false);
+  const [browserError, setBrowserError] = useState<string | null>(null);
+  const [browserActive, setBrowserActive] = useState(false);
 
   // Use refs for values needed in callbacks to avoid stale closures
   const currentChatRef = useRef<Chat | null>(null);
@@ -317,6 +337,38 @@ IMPORTANT - Avoiding Hallucination:
     });
   }, []);
 
+  const updateTodo = useCallback((chatId: string, todoId: string, text: string) => {
+    setChats((prev) => {
+      const chat = prev.find((c) => c.id === chatId);
+      if (!chat || !chat.todos) return prev;
+      const updatedTodos = chat.todos.map(t =>
+        t.id === todoId ? { ...t, text } : t
+      );
+      const updatedChat = { ...chat, todos: updatedTodos, updatedAt: new Date() };
+      saveChat(updatedChat);
+      if (currentChatRef.current?.id === chatId) {
+        setCurrentChatState(updatedChat);
+        currentChatRef.current = updatedChat;
+      }
+      return prev.map((c) => (c.id === chatId ? updatedChat : c));
+    });
+  }, []);
+
+  const deleteTodo = useCallback((chatId: string, todoId: string) => {
+    setChats((prev) => {
+      const chat = prev.find((c) => c.id === chatId);
+      if (!chat || !chat.todos) return prev;
+      const updatedTodos = chat.todos.filter(t => t.id !== todoId);
+      const updatedChat = { ...chat, todos: updatedTodos.length > 0 ? updatedTodos : undefined, updatedAt: new Date() };
+      saveChat(updatedChat);
+      if (currentChatRef.current?.id === chatId) {
+        setCurrentChatState(updatedChat);
+        currentChatRef.current = updatedChat;
+      }
+      return prev.map((c) => (c.id === chatId ? updatedChat : c));
+    });
+  }, []);
+
   const setTodos = useCallback((chatId: string, todos: TodoItem[]) => {
     setChats((prev) => {
       const chat = prev.find((c) => c.id === chatId);
@@ -399,6 +451,8 @@ IMPORTANT - Avoiding Hallucination:
         updateMessage,
         setTodos,
         toggleTodo,
+        updateTodo,
+        deleteTodo,
         clearTodos,
         setIsGenerating,
         updateSettings,
@@ -408,6 +462,18 @@ IMPORTANT - Avoiding Hallucination:
         openDocument,
         closeDocument,
         toggleCanvas,
+        browserOpen,
+        browserUrl,
+        browserPage,
+        browserLoading,
+        browserError,
+        browserActive,
+        setBrowserOpen,
+        setBrowserUrl,
+        setBrowserPage,
+        setBrowserLoading,
+        setBrowserError,
+        setBrowserActive,
       }}
     >
       {children}
