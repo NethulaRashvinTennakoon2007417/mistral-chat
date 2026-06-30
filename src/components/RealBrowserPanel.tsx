@@ -8,16 +8,25 @@ import {
 } from 'lucide-react';
 import { BrowserPage } from '@/types';
 
-const BROWSER_WS_URL = typeof window !== 'undefined'
-  ? `ws://${window.location.hostname}:3001`
-  : '';
-
 interface RealBrowserPanelProps {
   onReadPage: () => void;
   onSummarizePage: () => void;
   onAskAboutPage: () => void;
   onClose: () => void;
   onPageLoad: (page: BrowserPage) => void;
+}
+
+function generateSessionId() {
+  return 'browser-' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+}
+
+async function browserAction(sessionId: string, action: string, params?: Record<string, unknown>) {
+  const res = await fetch('/api/browser', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, action, ...params }),
+  });
+  return res.json();
 }
 
 export function RealBrowserPanel({
@@ -29,75 +38,22 @@ export function RealBrowserPanel({
 }: RealBrowserPanelProps) {
   const [inputValue, setInputValue] = useState('https://www.google.com');
   const [connected, setConnected] = useState(false);
-  const [connecting, setConnecting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [pageTitle, setPageTitle] = useState('');
   const [pageUrl, setPageUrl] = useState('');
+  const [screenshot, setScreenshot] = useState('');
   const [scale, setScale] = useState(1);
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [actionPending, setActionPending] = useState(false);
 
-  const wsRef = useRef<WebSocket | null>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const connectingRef = useRef(false);
-
-  const connect = useCallback(() => {
-    if (connectingRef.current || connected) return;
-    connectingRef.current = true;
-    setConnecting(true);
-
-    const ws = new WebSocket(BROWSER_WS_URL);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      setConnected(true);
-      setConnecting(false);
-      connectingRef.current = false;
-    };
-
-    ws.onclose = () => {
-      setConnected(false);
-      setConnecting(false);
-      connectingRef.current = false;
-    };
-
-    ws.onerror = () => {
-      setConnected(false);
-      setConnecting(false);
-      connectingRef.current = false;
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'screenshot' && imgRef.current) {
-          imgRef.current.src = `data:image/jpeg;base64,${msg.data}`;
-        } else if (msg.type === 'pageinfo') {
-          setPageTitle(msg.title);
-          setPageUrl(msg.url);
-          setInputValue(msg.url);
-        } else if (msg.type === 'extracted') {
-          onPageLoad({
-            url: msg.url,
-            title: msg.title,
-            headings: msg.headings || [],
-            paragraphs: msg.paragraphs || [],
-            links: msg.links || [],
-            extractedAt: new Date(),
-          });
-        }
-      } catch {}
-    };
-  }, [connected, onPageLoad]);
+  const sessionIdRef = useRef(generateSessionId());
 
   useEffect(() => {
-    connect();
-    return () => {
-      wsRef.current?.close();
-    };
+    sessionIdRef.current = generateSessionId();
   }, []);
 
-  // Scale image to fit container
   useEffect(() => {
     const updateScale = () => {
       if (containerRef.current) {
@@ -109,36 +65,84 @@ export function RealBrowserPanel({
     return () => window.removeEventListener('resize', updateScale);
   }, []);
 
-  const send = useCallback((msg: object) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(msg));
+  const handleNavigate = useCallback(async (url: string) => {
+    setLoading(true);
+    setActionPending(true);
+    try {
+      const data = await browserAction(sessionIdRef.current, 'navigate', { url });
+      if (data.error) {
+        console.error('Navigate error:', data.error);
+        return;
+      }
+      if (data.screenshot) setScreenshot(data.screenshot);
+      if (data.url) {
+        setPageUrl(data.url);
+        setInputValue(data.url);
+      }
+      if (data.title) setPageTitle(data.title);
+      setConnected(true);
+
+      onPageLoad({
+        url: data.url || url,
+        title: data.title || '',
+        headings: [],
+        paragraphs: [],
+        links: [],
+        extractedAt: new Date(),
+      });
+
+      setHistory((prev) => {
+        const next = prev.slice(0, historyIndex + 1);
+        next.push(url);
+        return next;
+      });
+      setHistoryIndex((prev) => prev + 1);
+    } catch (err) {
+      console.error('Navigate failed:', err);
+    } finally {
+      setLoading(false);
+      setActionPending(false);
     }
-  }, []);
+  }, [historyIndex, onPageLoad]);
 
-  const getCoords = useCallback((e: React.MouseEvent) => {
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
-    return {
-      x: Math.round((e.clientX - rect.left) / scale),
-      y: Math.round((e.clientY - rect.top) / scale),
-    };
-  }, [scale]);
+  const handleAction = useCallback(async (action: string, params?: Record<string, unknown>) => {
+    setActionPending(true);
+    try {
+      const data = await browserAction(sessionIdRef.current, action, params);
+      if (data.error) {
+        console.error(`${action} error:`, data.error);
+        return;
+      }
+      if (data.screenshot) setScreenshot(data.screenshot);
+      if (data.url) {
+        setPageUrl(data.url);
+        setInputValue(data.url);
+      }
+      if (data.title) setPageTitle(data.title);
 
-  const navigate = useCallback((url: string) => {
-    send({ type: 'navigate', url });
-    setHistory((prev) => {
-      const next = prev.slice(0, historyIndex + 1);
-      next.push(url);
-      return next;
-    });
-    setHistoryIndex((prev) => prev + 1);
-  }, [send, historyIndex]);
+      if (data.headings || data.paragraphs) {
+        onPageLoad({
+          url: data.url || pageUrl,
+          title: data.title || pageTitle,
+          headings: data.headings || [],
+          paragraphs: data.paragraphs || [],
+          links: data.links || [],
+          extractedAt: new Date(),
+        });
+      }
+    } catch (err) {
+      console.error(`${action} failed:`, err);
+    } finally {
+      setActionPending(false);
+    }
+  }, [pageUrl, pageTitle, onPageLoad]);
 
   const handleInputKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       let url = inputValue.trim();
       if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
       setInputValue(url);
-      navigate(url);
+      handleNavigate(url);
     }
   };
 
@@ -148,9 +152,9 @@ export function RealBrowserPanel({
       setHistoryIndex(newIndex);
       const prevUrl = history[newIndex];
       setInputValue(prevUrl);
-      send({ type: 'navigate', url: prevUrl });
+      handleNavigate(prevUrl);
     } else {
-      send({ type: 'back' });
+      handleAction('back');
     }
   };
 
@@ -160,19 +164,41 @@ export function RealBrowserPanel({
       setHistoryIndex(newIndex);
       const nextUrl = history[newIndex];
       setInputValue(nextUrl);
-      send({ type: 'navigate', url: nextUrl });
+      handleNavigate(nextUrl);
     } else {
-      send({ type: 'forward' });
+      handleAction('forward');
     }
   };
 
-  const handleReload = () => {
-    send({ type: 'reload' });
-  };
+  const handleClick = useCallback((e: React.MouseEvent<HTMLImageElement>) => {
+    if (actionPending) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.round((e.clientX - rect.left) / scale);
+    const y = Math.round((e.clientY - rect.top) / scale);
+    handleAction('click', { x, y, button: e.button === 2 ? 'right' : 'left' });
+  }, [scale, actionPending, handleAction]);
 
-  const handleExtract = () => {
-    send({ type: 'extract' });
-  };
+  const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLImageElement>) => {
+    if (actionPending) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.round((e.clientX - rect.left) / scale);
+    const y = Math.round((e.clientY - rect.top) / scale);
+    handleAction('dblclick', { x, y });
+  }, [scale, actionPending, handleAction]);
+
+  const handleWheel = useCallback((e: React.WheelEvent<HTMLImageElement>) => {
+    if (actionPending) return;
+    e.preventDefault();
+    handleAction('wheel', { deltaX: e.deltaX, deltaY: e.deltaY });
+  }, [actionPending, handleAction]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLImageElement>) => {
+    if (actionPending) return;
+    handleAction('keydown', {
+      key: e.key,
+      modifiers: { ctrl: e.ctrlKey, shift: e.shiftKey, alt: e.altKey, meta: e.metaKey },
+    });
+  }, [actionPending, handleAction]);
 
   return (
     <div className="flex flex-col h-full bg-[var(--background)] border-l border-[var(--border)] animate-slide-in-right">
@@ -192,7 +218,7 @@ export function RealBrowserPanel({
           onClick={handleGoBack}
           className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           title="Go back"
-          disabled={!connected}
+          disabled={!connected || actionPending}
         >
           <ArrowLeft size={14} />
         </button>
@@ -200,15 +226,15 @@ export function RealBrowserPanel({
           onClick={handleGoForward}
           className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           title="Go forward"
-          disabled={!connected}
+          disabled={!connected || actionPending}
         >
           <ArrowRight size={14} />
         </button>
         <button
-          onClick={handleReload}
+          onClick={() => handleAction('reload')}
           className="flex items-center justify-center w-7 h-7 rounded-md hover:bg-[var(--muted)] text-[var(--muted-foreground)] transition-all duration-200"
           title="Reload"
-          disabled={!connected}
+          disabled={!connected || actionPending}
         >
           <RotateCcw size={14} />
         </button>
@@ -223,17 +249,15 @@ export function RealBrowserPanel({
               onKeyDown={handleInputKeyDown}
               placeholder="Enter URL..."
               className="flex-1 bg-transparent border-none outline-none text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] min-w-0"
-              disabled={!connected}
             />
             <button
               onClick={() => {
                 let url = inputValue.trim();
                 if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
                 setInputValue(url);
-                navigate(url);
+                handleNavigate(url);
               }}
               className="flex items-center justify-center w-5 h-5 rounded hover:bg-[var(--background)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors flex-shrink-0"
-              disabled={!connected}
             >
               <Search size={11} />
             </button>
@@ -252,7 +276,7 @@ export function RealBrowserPanel({
       {/* Page Actions Bar */}
       <div className="flex items-center gap-1 px-2 py-1.5 border-b border-[var(--border)] bg-[var(--background)] flex-shrink-0">
         <button
-          onClick={handleExtract}
+          onClick={() => handleAction('extract')}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--muted)] hover:bg-[var(--primary)]/10 text-[var(--foreground)] text-xs font-medium transition-all duration-200 active:scale-95"
         >
           <BookOpen size={12} />
@@ -260,7 +284,7 @@ export function RealBrowserPanel({
         </button>
         <button
           onClick={() => {
-            handleExtract();
+            handleAction('extract');
             setTimeout(onSummarizePage, 500);
           }}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--muted)] hover:bg-[var(--primary)]/10 text-[var(--foreground)] text-xs font-medium transition-all duration-200 active:scale-95"
@@ -270,7 +294,7 @@ export function RealBrowserPanel({
         </button>
         <button
           onClick={() => {
-            handleExtract();
+            handleAction('extract');
             setTimeout(onAskAboutPage, 500);
           }}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--muted)] hover:bg-[var(--primary)]/10 text-[var(--foreground)] text-xs font-medium transition-all duration-200 active:scale-95"
@@ -282,17 +306,17 @@ export function RealBrowserPanel({
           {connected ? (
             <>
               <CheckCircle2 size={11} className="text-green-500" />
-              Live browser
+              Browser active
             </>
-          ) : connecting ? (
+          ) : loading ? (
             <>
               <Loader2 size={11} className="animate-spin" />
-              Connecting...
+              Starting browser...
             </>
           ) : (
             <>
               <WifiOff size={11} className="text-red-500" />
-              Server offline
+              No browser
             </>
           )}
         </div>
@@ -300,71 +324,61 @@ export function RealBrowserPanel({
 
       {/* Browser Content */}
       <div ref={containerRef} className="flex-1 relative overflow-hidden bg-white">
-        {!connected && (
+        {loading && !screenshot && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--background)]">
             <div className="flex flex-col items-center gap-3 text-center px-8">
-              <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
-                <Wifi size={24} className="text-amber-500" />
+              <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                <Loader2 size={24} className="text-blue-500 animate-spin" />
               </div>
               <p className="text-sm font-medium text-[var(--foreground)]">
-                {connecting ? 'Connecting to browser server...' : 'Browser server not running'}
+                Starting headless browser...
               </p>
               <p className="text-xs text-[var(--muted-foreground)] max-w-[320px]">
-                {connecting
-                  ? 'Starting headless Chromium...'
-                  : 'Start the browser server with: node server/browser-server.js'}
+                First visit may take a few seconds while the browser starts up.
               </p>
-              {!connecting && (
-                <button
-                  onClick={connect}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--muted)] hover:bg-[var(--primary)]/10 text-xs font-medium text-[var(--foreground)] transition-all duration-200 active:scale-95"
-                >
-                  <RotateCcw size={12} />
-                  Retry connection
-                </button>
-              )}
             </div>
           </div>
         )}
 
-        <img
-          ref={imgRef}
-          alt="Browser viewport"
-          className="w-full h-full object-contain cursor-crosshair"
-          style={{ imageRendering: 'auto' }}
-          onMouseMove={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = Math.round((e.clientX - rect.left) / scale);
-            const y = Math.round((e.clientY - rect.top) / scale);
-            send({ type: 'mousemove', x, y });
-          }}
-          onMouseDown={(e) => {
-            e.preventDefault();
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = Math.round((e.clientX - rect.left) / scale);
-            const y = Math.round((e.clientY - rect.top) / scale);
-            send({ type: 'click', x, y, button: e.button === 2 ? 'right' : 'left' });
-          }}
-          onDoubleClick={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = Math.round((e.clientX - rect.left) / scale);
-            const y = Math.round((e.clientY - rect.top) / scale);
-            send({ type: 'dblclick', x, y });
-          }}
-          onWheel={(e) => {
-            e.preventDefault();
-            send({ type: 'wheel', deltaX: e.deltaX, deltaY: e.deltaY });
-          }}
-          onKeyDown={(e) => {
-            send({
-              type: 'keydown',
-              key: e.key,
-              modifiers: { ctrl: e.ctrlKey, shift: e.shiftKey, alt: e.altKey, meta: e.metaKey },
-            });
-          }}
-          tabIndex={0}
-          onContextMenu={(e) => e.preventDefault()}
-        />
+        {!connected && !loading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--background)]">
+            <div className="flex flex-col items-center gap-3 text-center px-8">
+              <div className="w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+                <Globe size={24} className="text-amber-500" />
+              </div>
+              <p className="text-sm font-medium text-[var(--foreground)]">
+                Enter a URL to browse
+              </p>
+              <p className="text-xs text-[var(--muted-foreground)] max-w-[320px]">
+                The browser runs on the server via Playwright. Supports JavaScript-rendered pages.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {screenshot && (
+          <img
+            src={`data:image/jpeg;base64,${screenshot}`}
+            alt="Browser viewport"
+            className="w-full h-full object-contain cursor-crosshair"
+            style={{ imageRendering: 'auto' }}
+            onClick={handleClick}
+            onDoubleClick={handleDoubleClick}
+            onWheel={handleWheel}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+            onContextMenu={(e) => e.preventDefault()}
+          />
+        )}
+
+        {actionPending && screenshot && (
+          <div className="absolute top-2 right-2 z-20">
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/60 text-white text-[10px]">
+              <Loader2 size={10} className="animate-spin" />
+              Loading...
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Page Info Footer */}

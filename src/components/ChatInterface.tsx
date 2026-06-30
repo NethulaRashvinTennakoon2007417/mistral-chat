@@ -88,31 +88,22 @@ export function ChatInterface() {
   const [showPromptPresets, setShowPromptPresets] = useState(false);
   const [browserServerAvailable, setBrowserServerAvailable] = useState(false);
 
-  // Check if browser server is available
+  // Check if browser API is available
   useEffect(() => {
     const checkServer = async () => {
       try {
-        const wsUrl = `ws://${window.location.hostname}:3001`;
-        const ws = new WebSocket(wsUrl);
-        const timeout = setTimeout(() => {
-          ws.close();
-          setBrowserServerAvailable(false);
-        }, 3000);
-        ws.onopen = () => {
-          clearTimeout(timeout);
+        const res = await fetch('/api/browser', { method: 'GET' });
+        if (res.ok) {
           setBrowserServerAvailable(true);
-          ws.close();
-        };
-        ws.onerror = () => {
-          clearTimeout(timeout);
+        } else {
           setBrowserServerAvailable(false);
-        };
+        }
       } catch {
         setBrowserServerAvailable(false);
       }
     };
     checkServer();
-    const interval = setInterval(checkServer, 10000);
+    const interval = setInterval(checkServer, 15000);
     return () => clearInterval(interval);
   }, []);
 
