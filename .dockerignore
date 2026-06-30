@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+src
+public
+*.png
+*.md
+*.ts
+!server/browser-server.js
+!package.json
+!package-lock.json
