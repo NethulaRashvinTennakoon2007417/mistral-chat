@@ -115,6 +115,24 @@ export function BrowserPanel({
       try {
         const doc = iframe.contentDocument || iframe.contentWindow?.document;
         if (doc) {
+          // Detect if iframe shows a browser error page (refused to connect, etc.)
+          const bodyText = doc.body?.textContent || '';
+          const isBlocked = /refused to connect|failed to load|not found|access denied|blocked/i.test(bodyText)
+            && bodyText.length < 500;
+
+          if (isBlocked) {
+            // Iframe is blocked — show screenshot, still fetch text via proxy
+            onLoading(false);
+            setIframeError(true);
+            try {
+              const extracted = await fetchAndExtract(currentUrl);
+              onPageLoad(extracted);
+            } catch {
+              // Proxy also failed, that's ok — screenshot is the primary view
+            }
+            return;
+          }
+
           const title = doc.title || new URL(currentUrl).hostname;
           const headings: string[] = [];
           doc.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((el) => {
@@ -190,10 +208,19 @@ export function BrowserPanel({
       if (iframe) {
         try {
           const doc = iframe.contentDocument || iframe.contentWindow?.document;
-          if (doc && doc.querySelectorAll('p').length > 0) {
-            clearInterval(interval);
-            handleIframeLoad();
-            return;
+          if (doc) {
+            // Check for blocked iframe error page
+            const bodyText = doc.body?.textContent || '';
+            if (/refused to connect|failed to load|not found|access denied|blocked/i.test(bodyText) && bodyText.length < 500) {
+              clearInterval(interval);
+              handleIframeLoad();
+              return;
+            }
+            if (doc.querySelectorAll('p').length > 0) {
+              clearInterval(interval);
+              handleIframeLoad();
+              return;
+            }
           }
         } catch {
           // Cross-origin — can't access DOM
