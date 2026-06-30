@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   X, ArrowLeft, ArrowRight, RotateCcw, ExternalLink,
   Globe, Loader2, AlertCircle, BookOpen, MessageSquare,
@@ -107,21 +107,56 @@ export function BrowserPanel({
 
   const handleIframeLoad = useCallback(async () => {
     setIframeError(false);
+    const currentUrl = iframeRef.current?.src || url;
 
     // Try same-origin DOM access first
     const iframe = iframeRef.current;
     if (iframe) {
-      const extracted = extractFromIframe(iframe, url);
-      if (extracted && extracted.paragraphs.length > 0) {
-        onLoading(false);
-        onPageLoad(extracted);
-        return;
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (doc) {
+          const title = doc.title || new URL(currentUrl).hostname;
+          const headings: string[] = [];
+          doc.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((el) => {
+            const text = el.textContent?.trim();
+            if (text) headings.push(text);
+          });
+          const paragraphs: string[] = [];
+          doc.querySelectorAll('p').forEach((el) => {
+            const text = el.textContent?.trim();
+            if (text && text.length > 20) paragraphs.push(text);
+          });
+          if (paragraphs.length > 0) {
+            const links: { text: string; href: string }[] = [];
+            doc.querySelectorAll('a[href]').forEach((el) => {
+              const text = el.textContent?.trim();
+              const href = el.getAttribute('href');
+              if (text && href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+                try {
+                  links.push({ text: text.slice(0, 100), href: new URL(href, currentUrl).href });
+                } catch { /* skip */ }
+              }
+            });
+            onLoading(false);
+            onPageLoad({
+              url: currentUrl,
+              title,
+              headings: headings.slice(0, 30),
+              paragraphs: paragraphs.slice(0, 50),
+              links: links.slice(0, 40),
+              extractedAt: new Date(),
+            });
+            return;
+          }
+        }
+      } catch {
+        // Cross-origin, fall through to proxy
       }
     }
 
-    // Fallback: fetch via CORS proxy chain
+    // Fallback: fetch via API route / CORS proxy
     try {
-      const extracted = await fetchAndExtract(url);
+      const extracted = await fetchAndExtract(currentUrl);
       onLoading(false);
       onPageLoad(extracted);
     } catch {
@@ -144,6 +179,40 @@ export function BrowserPanel({
         onError('This page could not be loaded. It may block external access. Try opening it in a new tab.');
       });
   };
+
+  // Polling fallback: if iframe loads but onLoad doesn't fire, detect content via polling
+  useEffect(() => {
+    if (!loading || !url || url === 'https://') return;
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      const iframe = iframeRef.current;
+      if (iframe) {
+        try {
+          const doc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (doc && doc.querySelectorAll('p').length > 0) {
+            clearInterval(interval);
+            handleIframeLoad();
+            return;
+          }
+        } catch {
+          // Cross-origin — can't access DOM
+        }
+      }
+      if (attempts >= 10) {
+        clearInterval(interval);
+        // After 5 seconds, try API route directly
+        fetchAndExtract(url).then((extracted) => {
+          onLoading(false);
+          onPageLoad(extracted);
+        }).catch(() => {
+          onLoading(false);
+          onError('This page could not be loaded.');
+        });
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [loading, url, handleIframeLoad, onLoading, onPageLoad, onError]);
 
   const canGoBack = historyIndex > 0;
   const canGoForward = historyIndex < history.length - 1;
