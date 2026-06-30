@@ -1,6 +1,9 @@
 import { BrowserPage } from '@/types';
 
-const CORS_PROXIES = [
+const PROXY_BUILDERS = [
+  // Own API route — no CORS issues
+  (url: string) => `/api/fetch-page?url=${encodeURIComponent(url)}`,
+  // External CORS proxies as fallback
   (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
   (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
   (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
@@ -97,7 +100,7 @@ export function extractFromIframe(iframe: HTMLIFrameElement, url: string): Brows
 async function tryFetchViaProxy(url: string): Promise<string> {
   let lastError: Error | null = null;
 
-  for (const buildProxy of CORS_PROXIES) {
+  for (const buildProxy of PROXY_BUILDERS) {
     try {
       const proxyUrl = buildProxy(url);
       const controller = new AbortController();
